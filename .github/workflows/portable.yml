@@ -1,0 +1,28 @@
+name: portable
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  zip:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: python packaging/make_portable.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: KanjiDesk-windows
+          path: dist-portable/KanjiDesk-windows.zip
+      - if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist-portable/KanjiDesk-windows.zip

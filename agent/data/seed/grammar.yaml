@@ -1,0 +1,456 @@
+- surface: です
+  pattern: N です
+  meaning: polite copula
+  meaning_ru: вежливая связка «есть / является»
+  jlpt: N5
+  uses_vocab: [本, 人]
+  examples:
+    - jp: "これは本です。"
+      ru: "Это книга."
+      en: "This is a book."
+    - jp: "日本人です。"
+      ru: "Я японец."
+      en: "I am Japanese."
+
+- surface: だ
+  pattern: N だ
+  meaning: plain copula
+  meaning_ru: простая связка
+  jlpt: N5
+  uses_vocab: [本]
+  examples:
+    - jp: "これは本だ。"
+      ru: "Это книга."
+      en: "This is a book."
+
+- surface: ます
+  pattern: V-ます
+  meaning: polite verb ending
+  meaning_ru: вежливое окончание глагола
+  jlpt: N5
+  uses_vocab: [行く, 見る]
+  examples:
+    - jp: "行きます。"
+      ru: "(Я) пойду / иду."
+      en: "I will go."
+    - jp: "見ます。"
+      ru: "(Я) смотрю."
+      en: "I look."
+
+- surface: の
+  pattern: N の N
+  meaning: possessive / modifier
+  meaning_ru: принадлежность или определение
+  jlpt: N5
+  uses_vocab: [日本, 人]
+  examples:
+    - jp: "日本人の本"
+      ru: "книга японца"
+      en: "a Japanese person's book"
+
+- surface: は
+  pattern: N は
+  meaning: topic particle
+  meaning_ru: частица темы
+  jlpt: N5
+  uses_vocab: [今日]
+  examples:
+    - jp: "今日は月曜日です。"
+      ru: "Сегодня понедельник."
+      en: "Today is Monday."
+
+- surface: が
+  pattern: N が
+  meaning: subject particle
+  meaning_ru: частица подлежащего
+  jlpt: N5
+  uses_vocab: [水]
+  examples:
+    - jp: "水があります。"
+      ru: "Есть вода."
+      en: "There is water."
+
+- surface: を
+  pattern: N を V
+  meaning: object particle
+  meaning_ru: частица прямого дополнения
+  jlpt: N5
+  uses_vocab: [本, 読む]
+  examples:
+    - jp: "本を読む。"
+      ru: "Читать книгу."
+      en: "Read a book."
+
+- surface: に
+  pattern: N に
+  meaning: time / destination / indirect object
+  meaning_ru: время, направление, адресат
+  jlpt: N5
+  uses_vocab: [日本, 行く]
+  examples:
+    - jp: "日本に行く。"
+      ru: "Ехать в Японию."
+      en: "Go to Japan."
+
+- surface: で
+  pattern: N で
+  meaning: location of action / means
+  meaning_ru: место действия или средство
+  jlpt: N5
+  uses_vocab: [手]
+  examples:
+    - jp: "手で書く。"
+      ru: "Писать рукой."
+      en: "Write by hand."
+
+- surface: と
+  pattern: N と
+  meaning: and / with / quotation
+  meaning_ru: «и», «с», цитата
+  jlpt: N5
+  uses_vocab: [人]
+  examples:
+    - jp: "人と話す。"
+      ru: "Говорить с человеком."
+      en: "Talk with a person."
+
+- surface: も
+  pattern: N も
+  meaning: also; too
+  meaning_ru: тоже; также
+  jlpt: N5
+  uses_vocab: [水]
+  examples:
+    - jp: "水もあります。"
+      ru: "Вода тоже есть."
+      en: "There is water too."
+
+- surface: か
+  pattern: …か
+  meaning: question particle
+  meaning_ru: вопрос
+  jlpt: N5
+  uses_vocab: [本]
+  examples:
+    - jp: "本ですか。"
+      ru: "Это книга?"
+      en: "Is it a book?"
+
+- surface: ない
+  pattern: V-ない
+  meaning: plain negative
+  meaning_ru: простое отрицание
+  jlpt: N5
+  uses_vocab: [行く]
+  examples:
+    - jp: "行かない。"
+      ru: "Не пойду."
+      en: "I won't go."
+
+- surface: た
+  pattern: V-た
+  meaning: past / perfect
+  meaning_ru: прошедшее время
+  jlpt: N5
+  uses_vocab: [見る]
+  examples:
+    - jp: "見た。"
+      ru: "Увидел."
+      en: "I saw it."
+
+- surface: て
+  pattern: V-て
+  meaning: te-form (linking)
+  meaning_ru: форма на -て
+  jlpt: N5
+  uses_vocab: [行く, 見る]
+  examples:
+    - jp: "行って見る。"
+      ru: "Пойти и посмотреть."
+      en: "Go and see."
+
+- surface: ている
+  pattern: V-ている
+  meaning: progressive / result state
+  meaning_ru: длительность или результат
+  jlpt: N5
+  uses_vocab: [見る]
+  examples:
+    - jp: "見ている。"
+      ru: "Смотрю (сейчас)."
+      en: "I am looking."
+
+- surface: たい
+  pattern: V-たい
+  meaning: want to do
+  meaning_ru: хотеть сделать
+  jlpt: N5
+  uses_vocab: [行く]
+  examples:
+    - jp: "行きたい。"
+      ru: "Хочу пойти."
+      en: "I want to go."
+
+- surface: から
+  pattern: N から
+  meaning: from; because
+  meaning_ru: от; потому что
+  jlpt: N5
+  uses_vocab: [日本]
+  examples:
+    - jp: "日本から来る。"
+      ru: "Приезжать из Японии."
+      en: "Come from Japan."
+
+- surface: まで
+  pattern: N まで
+  meaning: until; as far as
+  meaning_ru: до
+  jlpt: N5
+  uses_vocab: [三]
+  examples:
+    - jp: "三日まで"
+      ru: "до третьего числа"
+      en: "until the 3rd"
+
+- surface: もう
+  pattern: もう
+  meaning: already; (not) anymore
+  meaning_ru: уже; больше не
+  jlpt: N5
+  uses_vocab: [行く]
+  examples:
+    - jp: "もう行った。"
+      ru: "Уже ушёл."
+      en: "Already went."
+
+- surface: まだ
+  pattern: まだ
+  meaning: still; not yet
+  meaning_ru: ещё; пока не
+  jlpt: N5
+  uses_vocab: [来る]
+  examples:
+    - jp: "まだ来ない。"
+      ru: "Ещё не пришёл."
+      en: "Hasn't come yet."
+
+- surface: ことがある
+  pattern: V-た ことがある
+  meaning: have the experience of
+  meaning_ru: иметь опыт
+  jlpt: N4
+  uses_vocab: [行く, 日本]
+  examples:
+    - jp: "日本に行ったことがある。"
+      ru: "Бывал в Японии."
+      en: "I have been to Japan."
+
+- surface: つもり
+  pattern: V-る つもり
+  meaning: intend to
+  meaning_ru: намереваться
+  jlpt: N4
+  uses_vocab: [行く]
+  examples:
+    - jp: "行くつもりです。"
+      ru: "Собираюсь пойти."
+      en: "I intend to go."
+
+- surface: ながら
+  pattern: V-ますstem ながら
+  meaning: while doing
+  meaning_ru: делая одновременно
+  jlpt: N4
+  uses_vocab: [話す, 歩く]
+  examples:
+    - jp: "話しながら行く。"
+      ru: "Идти, разговаривая."
+      en: "Go while talking."
+
+- surface: たり
+  pattern: V-たり V-たり
+  meaning: do things like A and B
+  meaning_ru: то одно, то другое
+  jlpt: N4
+  uses_vocab: [見る, 読む]
+  examples:
+    - jp: "見たり読んだりする。"
+      ru: "То смотрю, то читаю."
+      en: "I look and read and so on."
+
+- surface: ば
+  pattern: V-ば
+  meaning: if (conditional)
+  meaning_ru: если (условное)
+  jlpt: N4
+  uses_vocab: [行く]
+  examples:
+    - jp: "行けば分かる。"
+      ru: "Если пойдёшь — поймёшь."
+      en: "If you go, you'll understand."
+
+- surface: たら
+  pattern: V-たら
+  meaning: if / when
+  meaning_ru: если / когда
+  jlpt: N4
+  uses_vocab: [来る]
+  examples:
+    - jp: "来たら話す。"
+      ru: "Когда придёт — поговорим."
+      en: "When they come, we'll talk."
+
+- surface: ても
+  pattern: V-ても
+  meaning: even if
+  meaning_ru: даже если
+  jlpt: N4
+  uses_vocab: [行く]
+  examples:
+    - jp: "行ってもいい。"
+      ru: "Можно идти."
+      en: "It's OK even if you go."
+
+- surface: なければならない
+  pattern: V-なければならない
+  meaning: must
+  meaning_ru: должен
+  jlpt: N4
+  uses_vocab: [行く]
+  examples:
+    - jp: "行かなければならない。"
+      ru: "Нужно идти."
+      en: "I must go."
+
+- surface: ことができる
+  pattern: V-る ことができる
+  meaning: can; be able to
+  meaning_ru: мочь; уметь
+  jlpt: N4
+  uses_vocab: [話す]
+  examples:
+    - jp: "話すことができる。"
+      ru: "Могу говорить."
+      en: "I can speak."
+
+- surface: すぎる
+  pattern: V/Adj-すぎる
+  meaning: too much
+  meaning_ru: слишком
+  jlpt: N4
+  uses_vocab: [大きい]
+  examples:
+    - jp: "大きすぎる。"
+      ru: "Слишком большой."
+      en: "Too big."
+
+- surface: になる
+  pattern: N になる
+  meaning: become
+  meaning_ru: становиться
+  jlpt: N4
+  uses_vocab: [大人]
+  examples:
+    - jp: "大人になる。"
+      ru: "Стать взрослым."
+      en: "Become an adult."
+
+- surface: にする
+  pattern: N にする
+  meaning: decide on; make into
+  meaning_ru: выбрать; сделать
+  jlpt: N4
+  uses_vocab: [本]
+  examples:
+    - jp: "本にする。"
+      ru: "Выберу книгу."
+      en: "I'll go with the book."
+
+- surface: がある
+  pattern: N がある
+  meaning: there is (inanimate)
+  meaning_ru: есть (неодуш.)
+  jlpt: N5
+  uses_vocab: [本]
+  examples:
+    - jp: "本がある。"
+      ru: "Есть книга."
+      en: "There is a book."
+
+- surface: がいる
+  pattern: N がいる
+  meaning: there is (animate)
+  meaning_ru: есть (одуш.)
+  jlpt: N5
+  uses_vocab: [人]
+  examples:
+    - jp: "人がいる。"
+      ru: "Есть человек."
+      en: "There is a person."
+
+- surface: ください
+  pattern: V-て ください
+  meaning: please do
+  meaning_ru: пожалуйста, сделайте
+  jlpt: N5
+  uses_vocab: [見る]
+  examples:
+    - jp: "見てください。"
+      ru: "Посмотрите, пожалуйста."
+      en: "Please look."
+
+- surface: ましょう
+  pattern: V-ましょう
+  meaning: let's
+  meaning_ru: давайте
+  jlpt: N5
+  uses_vocab: [行く]
+  examples:
+    - jp: "行きましょう。"
+      ru: "Пойдём."
+      en: "Let's go."
+
+- surface: てもいい
+  pattern: V-てもいい
+  meaning: may; it's OK to
+  meaning_ru: можно
+  jlpt: N5
+  uses_vocab: [入る]
+  examples:
+    - jp: "入ってもいい。"
+      ru: "Можно войти."
+      en: "You may enter."
+
+- surface: てはいけない
+  pattern: V-てはいけない
+  meaning: must not
+  meaning_ru: нельзя
+  jlpt: N5
+  uses_vocab: [入る]
+  examples:
+    - jp: "入ってはいけない。"
+      ru: "Входить нельзя."
+      en: "You must not enter."
+
+- surface: ために
+  pattern: N/V ために
+  meaning: for the sake of; in order to
+  meaning_ru: ради; для того чтобы
+  jlpt: N3
+  uses_vocab: [人]
+  examples:
+    - jp: "人のために"
+      ru: "ради человека"
+      en: "for someone's sake"
+
+- surface: ように
+  pattern: V ように
+  meaning: so that; like
+  meaning_ru: так чтобы; словно
+  jlpt: N3
+  uses_vocab: [見る]
+  examples:
+    - jp: "見えるように書く。"
+      ru: "Писать так, чтобы было видно."
+      en: "Write so it can be seen."

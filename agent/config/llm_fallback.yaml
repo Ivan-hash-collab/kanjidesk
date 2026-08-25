@@ -1,0 +1,48 @@
+# Free-tier Gemini routing for KanjyMemo.
+# Numbers copied from the project's api_rate_limits.md snapshot.
+
+timezone: UTC
+
+tiers:
+  workhorse:
+    # High daily budget — default for mnemonics, tutor, chat, sentences
+    models:
+      - id: gemini-3.5-flash-lite
+        rpm: 15
+        tpm: 250000
+        rpd: 500
+      - id: gemini-3.1-flash-lite
+        rpm: 15
+        tpm: 250000
+        rpd: 500
+  quality:
+    # Tight daily budget — first kanji mnemonic / hard grammar only
+    models:
+      - id: gemini-3.7-flash
+        rpm: 5
+        tpm: 250000
+        rpd: 20
+      - id: gemini-3.6-flash
+        rpm: 5
+        tpm: 250000
+        rpd: 20
+  legacy:
+    models:
+      - id: gemini-2.5-flash-lite
+        rpm: 10
+        tpm: 250000
+        rpd: 20
+  embeddings:
+    models:
+      - id: gemini-embedding-2
+        rpm: 100
+        tpm: 30000
+        rpd: 1000
+
+policy:
+  workhorse_rpd_reserve: 0.90   # above this, skip API and use templates
+  quality_roles:
+    - mnemonic_first
+    - grammar_hard
+  never_call_during_review: true
+  cache_ttl_days: 365

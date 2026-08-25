@@ -1,0 +1,33 @@
+KanjiDesk uses open data, not Kanji Study / Kodansha / Outlier content.
+
+KANJIDIC (meanings, readings, grade, frequency)
+  Electronic Dictionary Research and Development Group
+  https://www.edrdg.org/wiki/index.php/KANJIDIC_Project
+  Creative Commons Attribution-ShareAlike
+
+JLPT level tags in the bundled JSON were compiled by David Gouveia
+  https://github.com/davidluzgouveia/kanji-data  (MIT)
+  from Jonathan Waller's JLPT lists: http://www.tanos.co.uk/jlpt/
+
+Stroke diagrams
+  AnimCJK / Make Me a Hanzi (Arphic Public License)
+  https://github.com/parsimonhi/animCJK
+  Fallback: hanzi-writer-data-ja, KanjiVG (CC BY-SA 3.0)
+
+Kanji composition trees
+  AnimCJK dictionaryJa.txt decompositions
+  KRADFILE radical elements: EDRDG CC BY-SA
+  https://www.edrdg.org/krad/kradinf.html
+
+Example sentences
+  Tanaka corpus (EDRDG examples.utf) CC BY-SA
+  Tatoeba Japanese–English (manythings.org jpn-eng) CC BY 2.0
+
+Word frequency
+  OpenSubtitles 2016 via hermitdave/FrequencyWords (CC BY-SA 4.0)
+Kanji frequency
+  KANJIDIC newspaper rank (EDRDG)
+
+Graded reading passages in this app are original.
+WaniKani, Kodansha KLC, Outlier Linguistics, and Kanji Study
+paid add-on text are not included.

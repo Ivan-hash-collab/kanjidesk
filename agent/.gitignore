@@ -1,0 +1,17 @@
+gemini_api_key.env
+.env
+.env.*
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.db
+data/user/
+app/ui/node_modules/
+app/ui/dist/
+.python-windows-binaries/
+.DS_Store
+Thumbs.db
+*.log
+.idea/
+.vscode/
