@@ -39,4 +39,4 @@ jobs:
 
             Python и Node.js ставить не нужно. Окно открывается через WebView2 (уже есть в Windows 10/11).
 
-            Ключ Gemini для мнемоник — файл `%APPDATA%\KanjiDesk\gemini_api_key.env`.
+            Ключ Gemini: в приложении **Настройки** → вставь ключ с Google AI Studio → «Сохранить ключ».
