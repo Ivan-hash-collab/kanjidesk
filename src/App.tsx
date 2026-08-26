@@ -317,24 +317,26 @@ export default function App() {
           {sheet === 'settings' ? (
             <>
               {settingsKind === 'global' ? (
-                <section className="setup-sec">
-                  <p className="setup-label">Вид</p>
-                  <label className="pref">
-                    <span>
-                      <b>Тёмная бумага</b>
-                      <small>Ночной режим для всего приложения</small>
-                    </span>
-                    <input
-                      type="checkbox"
-                      checked={settings.dark}
-                      onChange={(e) => setSettings({ ...settings, dark: e.target.checked })}
-                    />
-                  </label>
-                </section>
-                <section className="setup-sec">
-                  <p className="setup-label">Ключ Gemini</p>
-                  <GeminiKeyField />
-                </section>
+                <>
+                  <section className="setup-sec">
+                    <p className="setup-label">Вид</p>
+                    <label className="pref">
+                      <span>
+                        <b>Тёмная бумага</b>
+                        <small>Ночной режим для всего приложения</small>
+                      </span>
+                      <input
+                        type="checkbox"
+                        checked={settings.dark}
+                        onChange={(e) => setSettings({ ...settings, dark: e.target.checked })}
+                      />
+                    </label>
+                  </section>
+                  <section className="setup-sec">
+                    <p className="setup-label">Ключ Gemini</p>
+                    <GeminiKeyField />
+                  </section>
+                </>
               ) : (
                 <p className="muted">
                   Настройки только этого квиза. Тема, озвучка и фуригана — пункт «Настройки» слева.
