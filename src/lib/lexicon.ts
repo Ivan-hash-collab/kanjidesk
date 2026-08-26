@@ -3,6 +3,7 @@ import { loadGzJson, loadJson } from './gzipJson'
 import { mergeGlosses } from './gloss'
 import { deinflectWritten, kunLemma, matchWordToKun } from './deinflect'
 import { deinflect } from './morph'
+import { ensurePitch, pitchOf } from './pitch'
 import type { KanjiDict } from '../types'
 
 export type LexWord = {
@@ -11,6 +12,7 @@ export type LexWord = {
   meanings: string[]
   common: boolean
   alts?: string[]
+  pitch?: number[]
 }
 
 export type Sentence = {
@@ -99,38 +101,73 @@ function pickVariant(variants: ApiVariant[], ch: string): ApiVariant | null {
   return pool[0]
 }
 
-export function collapseWords(words: LexWord[]): LexWord[] {
+export function mergeWordVariants(words: LexWord[]): LexWord[] {
   const byWritten = new Map<string, LexWord>()
+  const writtenOrder: string[] = []
   for (const w of words) {
     const prev = byWritten.get(w.written)
     if (!prev) {
-      byWritten.set(w.written, { ...w, meanings: mergeGlosses(w.meanings), alts: w.alts ? [...w.alts] : [] })
+      byWritten.set(w.written, {
+        ...w,
+        meanings: mergeGlosses(w.meanings),
+        alts: w.alts ? [...w.alts] : [],
+      })
+      writtenOrder.push(w.written)
       continue
     }
     byWritten.set(w.written, {
       ...prev,
       meanings: mergeGlosses(prev.meanings, w.meanings).slice(0, 12),
       common: prev.common || w.common,
-      kana: kanjiLen(w.written) >= kanjiLen(prev.written) ? w.kana || prev.kana : prev.kana,
+      kana: prev.kana || w.kana,
+      alts: [...new Set([...(prev.alts ?? []), ...(w.alts ?? [])])].filter((x) => x !== prev.written),
+      pitch: prev.pitch?.length ? prev.pitch : w.pitch,
     })
   }
   const bySense = new Map<string, LexWord>()
-  for (const w of byWritten.values()) {
+  const senseOrder: string[] = []
+  for (const written of writtenOrder) {
+    const w = byWritten.get(written)
+    if (!w) continue
     const key = `${normRead(w.kana) || w.written}|${(w.meanings[0] || '').toLowerCase()}`
     const prev = bySense.get(key)
     if (!prev) {
       bySense.set(key, { ...w, alts: w.alts ?? [] })
+      senseOrder.push(key)
       continue
     }
-    const takeNew = kanjiLen(w.written) > kanjiLen(prev.written) || (w.common && !prev.common)
-    const keep = takeNew ? w : prev
-    const drop = takeNew ? prev : w
-    const alts = [...new Set([...(keep.alts ?? []), drop.written, ...(drop.alts ?? [])])].filter(
-      (x) => x !== keep.written,
-    )
-    bySense.set(key, { ...keep, meanings: mergeGlosses(keep.meanings, drop.meanings).slice(0, 12), alts })
+    const alts = [...new Set([...(prev.alts ?? []), w.written, ...(w.alts ?? [])])].filter((x) => x !== prev.written)
+    bySense.set(key, {
+      ...prev,
+      meanings: mergeGlosses(prev.meanings, w.meanings).slice(0, 12),
+      common: prev.common || w.common,
+      alts,
+      pitch: prev.pitch?.length ? prev.pitch : w.pitch,
+    })
   }
-  return [...bySense.values()]
+  return senseOrder.map((k) => bySense.get(k)!)
+}
+
+export function capSameGloss(words: LexWord[], maxPer = 2): LexWord[] {
+  if (maxPer <= 0) return words
+  const n = new Map<string, number>()
+  const out: LexWord[] = []
+  for (const w of words) {
+    const g = (w.meanings[0] || '').trim().toLowerCase()
+    if (!g) {
+      out.push(w)
+      continue
+    }
+    const c = n.get(g) ?? 0
+    if (c >= maxPer) continue
+    n.set(g, c + 1)
+    out.push(w)
+  }
+  return out
+}
+
+export function collapseWords(words: LexWord[]): LexWord[] {
+  return mergeWordVariants(words)
     .filter((w) => !isLexJunk(w))
     .sort(
     (a, b) =>
@@ -155,6 +192,64 @@ async function localWordsIndex(): Promise<Record<string, LexWord[]>> {
   return localByKanji ?? {}
 }
 
+let flatWords: LexWord[] | null = null
+let glossIndex: Map<string, LexWord[]> | null = null
+
+const GLOSS_STOP = new Set(['the', 'and', 'of', 'to', 'a', 'an', 'in', 'on', 'for', 'or', 'by', 'with', 'from', 'as'])
+
+export function glossTokens(meanings: string[]): string[] {
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const m of meanings) {
+    const parts = m.toLowerCase().match(/[a-z][a-z'-]{1,}/g) || []
+    for (const t of parts) {
+      if (t.length < 2 || GLOSS_STOP.has(t) || seen.has(t)) continue
+      seen.add(t)
+      out.push(t)
+    }
+  }
+  return out
+}
+
+function buildGlossIndex(words: LexWord[]) {
+  const idx = new Map<string, LexWord[]>()
+  for (const w of words) {
+    for (const t of glossTokens(w.meanings)) {
+      const arr = idx.get(t)
+      if (arr) arr.push(w)
+      else idx.set(t, [w])
+    }
+  }
+  glossIndex = idx
+}
+
+export function isFullLexicon(list: LexWord[]): boolean {
+  return Boolean(flatWords && list === flatWords)
+}
+
+export function glossHits(token: string): LexWord[] | null {
+  if (!glossIndex) return null
+  return glossIndex.get(token.toLowerCase()) ?? []
+}
+
+export async function allLocalWords(): Promise<LexWord[]> {
+  if (flatWords) return flatWords
+  const idx = await localWordsIndex()
+  const seen = new Set<string>()
+  const out: LexWord[] = []
+  for (const list of Object.values(idx)) {
+    for (const w of list) {
+      const id = `${w.written}|${w.kana}`
+      if (seen.has(id) || isLexJunk(w)) continue
+      seen.add(id)
+      out.push(w)
+    }
+  }
+  flatWords = collapseWords(out)
+  buildGlossIndex(flatWords)
+  return flatWords
+}
+
 export function parseTermKey(k: string): { written: string; kana: string } {
   const m = k.match(/^(.+?)\{([^}]+)\}$/)
   if (m) return { written: (m[1] ?? k).trim(), kana: (m[2] ?? '').trim() }
@@ -177,7 +272,7 @@ async function backupTerms(ch: string): Promise<LexWord[]> {
       meanings: sample?.en ? [tidyEn(sample.en)] : [],
       common: false,
     })
-    if (out.length >= 60) break
+    if (out.length >= 200) break
   }
   try {
     const freq = await loadJson<{ w: string }[]>('./data/freq-words.json')
@@ -185,7 +280,7 @@ async function backupTerms(ch: string): Promise<LexWord[]> {
       if (!x.w.includes(ch) || seen.has(x.w)) continue
       seen.add(x.w)
       out.push({ written: x.w, kana: '', meanings: [], common: false })
-      if (out.length >= 90) break
+      if (out.length >= 280) break
     }
   } catch {
     /* optional */
@@ -216,14 +311,14 @@ async function fetchWordsForKanji(ch: string): Promise<LexWord[]> {
         alts: [...new Set(alts)].slice(0, 4),
       })
     }
-    return (await enrichWords([...local, ...out, ...extra])).filter((w) => !isLexJunk(w)).slice(0, 120)
+    return (await enrichWords([...local, ...out, ...extra])).filter((w) => !isLexJunk(w)).slice(0, 400)
   } catch {
     return (await enrichWords([...local, ...extra])).filter((w) => !isLexJunk(w))
   }
 }
 
 export async function wordsForKanji(ch: string): Promise<LexWord[]> {
-  const cacheKey = `v9:${ch}`
+  const cacheKey = `v10:${ch}`
   if (wordCache.has(cacheKey)) return wordCache.get(cacheKey) ?? []
   const pending = wordInflight.get(cacheKey)
   if (pending) return pending
@@ -269,9 +364,15 @@ async function enrichWords(words: LexWord[]): Promise<LexWord[]> {
     ...w,
     meanings: mergeGlosses(w.meanings).slice(0, 12),
   }))
-  if (collapsed.every((w) => w.meanings.length)) return collapsed
+  const pitches = await ensurePitch()
+  const withPitch = collapsed.map((w) => {
+    if (w.pitch?.length) return w
+    const p = pitchOf(w.written, w.kana, pitches)
+    return p?.length ? { ...w, pitch: p } : w
+  })
+  if (withPitch.every((w) => w.meanings.length)) return withPitch
   return Promise.all(
-    collapsed.map(async (w) => {
+    withPitch.map(async (w) => {
       if (w.meanings.length) return w
       return { ...w, meanings: (await glossBackups(w.written)).slice(0, 12) }
     }),

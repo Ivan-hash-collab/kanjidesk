@@ -12,20 +12,40 @@ import webbrowser
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent
+def frozen() -> bool:
+    return bool(getattr(sys, "frozen", False))
+
+
+def resource_dir() -> Path:
+    if frozen():
+        return Path(getattr(sys, "_MEIPASS"))
+    return Path(__file__).resolve().parent
+
+
+def user_dir() -> Path:
+    if frozen():
+        base = Path(os.environ.get("APPDATA", str(Path.home() / "AppData/Roaming"))) / "KanjiDesk"
+        base.mkdir(parents=True, exist_ok=True)
+        return base
+    return Path(__file__).resolve().parent
+
+
+ROOT = resource_dir()
+USER = user_dir()
 DIST = ROOT / "dist"
-SESSION = ROOT / "session.json"
-PROFILE = ROOT / "chrome-profile"
+SESSION = USER / "session.json"
+PROFILE = USER / "chrome-profile"
 PORT = 8765
 URL = f"http://127.0.0.1:{PORT}/"
 MEMO_PORT = 5280
-LOG_DIR = ROOT / "logs"
-EXPECTED_MEMO_VERSION = "0.3.2"
+LOG_DIR = USER / "logs"
+EXPECTED_MEMO_VERSION = "0.3.3"
 MEMO_CANDIDATES = [
     Path(os.environ.get("KANJYMEMO_ROOT", "")),
     ROOT / "agent",
+    Path(__file__).resolve().parent / "agent",
     Path(r"D:\scripts\scripts\KanjyMemo"),
-    ROOT.parent.parent.parent / "scripts" / "scripts" / "KanjyMemo",
+    Path(__file__).resolve().parent.parent.parent.parent / "scripts" / "scripts" / "KanjyMemo",
 ]
 
 
@@ -190,7 +210,57 @@ def wait_memo(seconds: float = 20) -> dict | None:
     return last
 
 
+def _alert(title: str, text: str) -> None:
+    if not frozen():
+        print(text, flush=True)
+        return
+    _append_log("kanjidesk.log", f"{title}: {text}")
+    try:
+        import ctypes
+
+        ctypes.windll.user32.MessageBoxW(0, text, title, 0x10)
+    except Exception:
+        pass
+
+
+def start_memo_embedded() -> None:
+    agent = ROOT / "agent"
+    if not (agent / "app" / "__main__.py").is_file():
+        print("KanjyMemo не найден в сборке — мнемоники Gemini будут недоступны.", flush=True)
+        return
+    os.environ["KANJYMEMO_ROOT"] = str(agent)
+    os.environ["KANJYMEMO_USER_DIR"] = str(USER / "agent-user")
+    os.environ["KANJYMEMO_GEMINI_KEY"] = str(USER / "gemini_api_key.env")
+    (USER / "agent-user").mkdir(parents=True, exist_ok=True)
+    if str(agent) not in sys.path:
+        sys.path.insert(0, str(agent))
+    try:
+        import uvicorn
+        from app.agent.prompt_store import seed_prompts
+        from app.api.main import app as memo_app
+        from app.db import init_db
+
+        init_db()
+        seed_prompts()
+        threading.Thread(
+            target=lambda: uvicorn.run(memo_app, host="127.0.0.1", port=MEMO_PORT, log_level="warning"),
+            daemon=True,
+        ).start()
+        print(f"KanjyMemo (встроенный) → http://127.0.0.1:{MEMO_PORT}/", flush=True)
+        ready = wait_memo(25)
+        if ready:
+            print(f"Агент готов · v{ready.get('version')} · Sudachi {'да' if ready.get('sudachi') else 'нет'}", flush=True)
+        else:
+            print("Агент не ответил вовремя. Смотри %APPDATA%\\KanjiDesk\\logs", flush=True)
+    except Exception as e:
+        _append_log("kanjidesk.log", f"memo embed: {e!r}")
+        print(f"Агент не запустился: {e}", flush=True)
+
+
 def start_memo() -> None:
+    if frozen():
+        start_memo_embedded()
+        return
     info = memo_health()
     ver = str((info or {}).get("version") or "")
     if info and ver == EXPECTED_MEMO_VERSION and info.get("status") in {"ok", "degraded"}:
@@ -228,8 +298,10 @@ def start_memo() -> None:
 def ensure_build() -> None:
     if (DIST / "index.html").exists():
         return
+    if frozen():
+        raise FileNotFoundError("В сборке нет интерфейса dist/index.html")
     print("Собираю KanjiDesk…", flush=True)
-    subprocess.check_call(["npm", "run", "build"], cwd=ROOT, shell=True)
+    subprocess.check_call(["npm", "run", "build"], cwd=str(Path(__file__).resolve().parent), shell=True)
 
 
 def _bypass_proxy() -> None:
@@ -334,6 +406,18 @@ def find_chromium() -> Path | None:
     return None
 
 
+def open_webview() -> bool:
+    try:
+        import webview
+
+        webview.create_window("KanjiDesk", URL, width=1440, height=900, min_size=(800, 560))
+        webview.start()
+        return True
+    except Exception as e:
+        _append_log("kanjidesk.log", f"webview: {e!r}")
+        return False
+
+
 def open_window() -> None:
     exe = find_chromium()
     if exe:
@@ -357,20 +441,25 @@ def open_window() -> None:
 
 def main() -> int:
     _bypass_proxy()
-    os.chdir(ROOT)
+    os.chdir(str(USER if frozen() else Path(__file__).resolve().parent))
     start_memo()
     try:
         ensure_build()
+    except FileNotFoundError as e:
+        _alert("KanjiDesk", str(e))
+        return 1
     except subprocess.CalledProcessError:
-        print("Сборка не удалась. Нужен Node.js, затем: npm install && npm run build", flush=True)
+        _alert("KanjiDesk", "Сборка не удалась. Нужен Node.js, затем: npm install && npm run build")
         return 1
     if not (DIST / "index.html").exists():
-        print("Нет папки dist. Собери: npm install && npm run build", flush=True)
+        _alert("KanjiDesk", "Нет папки dist. Собери: npm install && npm run build")
         return 1
 
     if port_in_use(PORT):
         if health_ok():
             print("Сервер уже работает. Открываю окно…", flush=True)
+            if frozen() and open_webview():
+                return 0
             open_window()
             time.sleep(1.2)
             return 0
@@ -380,7 +469,7 @@ def main() -> int:
     try:
         server = Server(("127.0.0.1", PORT), Handler)
     except OSError as e:
-        print(f"Не удалось занять порт {PORT}: {e}", flush=True)
+        _alert("KanjiDesk", f"Не удалось занять порт {PORT}: {e}")
         return 1
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
@@ -394,15 +483,22 @@ def main() -> int:
         if port_in_use(PORT):
             print("Проверка HTTP не прошла, порт жив — открываю окно.", flush=True)
         else:
-            print("Интерфейс не ответил на :8765", flush=True)
+            _alert("KanjiDesk", "Интерфейс не ответил на :8765")
             server.shutdown()
             return 1
-    open_window()
     print(f"KanjiDesk: {URL}", flush=True)
-    print("Это чёрное окно не закрывай, пока пользуешься приложением.", flush=True)
     try:
-        while True:
-            time.sleep(1)
+        if frozen():
+            if not open_webview():
+                open_window()
+                print("Окно браузера открыто. Процесс можно свернуть.", flush=True)
+                while True:
+                    time.sleep(1)
+        else:
+            open_window()
+            print("Это чёрное окно не закрывай, пока пользуешься приложением.", flush=True)
+            while True:
+                time.sleep(1)
     except KeyboardInterrupt:
         pass
     finally:

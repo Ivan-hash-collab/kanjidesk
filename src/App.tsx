@@ -249,6 +249,7 @@ export default function App() {
             onOpenKanji={(ch) => openDict(ch)}
             onOpenWord={(w) => openLookup(w)}
             onLookup={openLookup}
+            onMemo={openMemo}
           />
         </div>
         {view === 'home' ? (
@@ -260,7 +261,13 @@ export default function App() {
           />
         ) : null}
         {view === 'lists' ? (
-          <ListsView dict={dict} onOpen={(chars, name) => start(chars, name)} onMemo={openMemo} />
+          <ListsView
+            dict={dict}
+            session={session}
+            sessionTitle={title}
+            onOpen={(chars, name) => start(chars, name)}
+            onMemo={openMemo}
+          />
         ) : null}
         {view === 'memo' ? (
           <MnemonicsView

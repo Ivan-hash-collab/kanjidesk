@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { defaultSettings, loadStats, patchQuiz } from './storage'
+import { clearHistory, defaultSettings, factoryReset, loadHistory, loadLastSession, loadStats, patchQuiz } from './storage'
 
 describe('settings and stats logic', () => {
   it('does not copy quiz patches onto global theme fields', () => {
@@ -19,5 +19,27 @@ describe('settings and stats logic', () => {
       JSON.stringify({ streak: 9, lastDay: key, writtenToday: ['日'], writesTotal: 12 }),
     )
     expect(loadStats()).toMatchObject({ streak: 0, writtenToday: [] })
+  })
+
+  it('clears circle history without dropping the last session', () => {
+    localStorage.setItem(
+      'kanjidesk.sessionHistory',
+      JSON.stringify([{ at: '1', mode: 'draw', title: 'x', durationMs: 1, items: [] }]),
+    )
+    localStorage.setItem('kanjidesk.lastSession', JSON.stringify(['日']))
+    clearHistory()
+    expect(loadHistory()).toEqual([])
+    expect(loadLastSession()).toEqual(['日'])
+  })
+
+  it('history reset only drops the calendar', () => {
+    localStorage.setItem(
+      'kanjidesk.sessionHistory',
+      JSON.stringify([{ at: '1', mode: 'draw', title: 'x', durationMs: 1, items: [] }]),
+    )
+    localStorage.setItem('kanjidesk.lastSession', JSON.stringify(['月']))
+    factoryReset('history')
+    expect(loadHistory()).toEqual([])
+    expect(loadLastSession()).toEqual(['月'])
   })
 })

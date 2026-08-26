@@ -1,16 +1,16 @@
 # KanjiDesk
 
-Пропись кандзи на Windows: списки, тесты, словарь и мнемоники (Gemini). Окно — Chrome/Edge в режиме приложения.
+Пропись кандзи на Windows: списки, тесты, словарь и мнемоники (Gemini).
 
-## Друзьям: как поставить
+## Друзьям: один файл
 
-1. Установи [Python 3.12+](https://www.python.org/downloads/) (галочка **Add python.exe to PATH**) и [Google Chrome](https://www.google.com/chrome/) или Edge.
-2. Скачай ZIP с [Releases](https://github.com/SenkuraDeveloper/kanjidesk/releases) **или** клонируй репозиторий.
-3. Если это исходники без папки `dist`: поставь [Node.js](https://nodejs.org/) и в папке проекта выполни `npm install` и `npm run build`.
-4. В папке `agent` скопируй `gemini_api_key.env.example` → `gemini_api_key.env` и вставь ключ с [Google AI Studio](https://aistudio.google.com/apikey). Без ключа учёба и словарь работают, истории Gemini — нет.
-5. Один раз: `pip install -r agent/requirements.txt`
-6. Запуск: двойной клик по **`start.bat`**. Чёрное окно не закрывай, пока пользуешься программой.
-7. Ярлык на рабочий стол: `install-shortcut.ps1` (правый клик → Run with PowerShell).
+1. Открой [Releases](https://github.com/SenkuraDeveloper/kanjidesk/releases) и скачай **KanjiDesk.exe**.
+2. Запусти. Больше ничего ставить не нужно — ни Python, ни Node.js.
+3. Закрой окно KanjiDesk, когда закончишь. Списки и прогресс живут в `%APPDATA%\KanjiDesk`.
+
+Если окно не открылось — поставь [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2) (на Windows 10/11 обычно уже есть).
+
+Мнемоники Gemini: создай файл `%APPDATA%\KanjiDesk\gemini_api_key.env` и вставь ключ с [Google AI Studio](https://aistudio.google.com/apikey). Без ключа словарь и пропись работают как обычно.
 
 ## Где хранятся данные
 
@@ -62,3 +62,13 @@ start.bat
 ```
 
 Агент ищется в таком порядке: переменная `KANJYMEMO_ROOT`, папка `agent/` в проекте, затем локальный путь разработчика.
+
+Сборка одного `KanjiDesk.exe` для друга:
+
+```bat
+npm run build
+python -m pip install -r packaging/requirements-build.txt
+python packaging/build_exe.py
+```
+
+Файл появится в `dist-portable/KanjiDesk.exe`. На GitHub он собирается сам при теге `v*`.

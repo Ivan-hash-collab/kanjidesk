@@ -1,4 +1,4 @@
-name: portable
+name: release
 
 on:
   push:
@@ -7,22 +7,36 @@ on:
   workflow_dispatch:
 
 jobs:
-  zip:
+  windows:
     runs-on: windows-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - run: npm ci
       - run: npm run build
-      - run: python packaging/make_portable.py
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -r packaging/requirements-build.txt -r agent/requirements.txt
+      - run: python packaging/build_exe.py
       - uses: actions/upload-artifact@v4
         with:
           name: KanjiDesk-windows
-          path: dist-portable/KanjiDesk-windows.zip
+          path: dist-portable/KanjiDesk.exe
       - if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist-portable/KanjiDesk-windows.zip
+          files: dist-portable/KanjiDesk.exe
+          generate_release_notes: true
+          body: |
+            Один файл: скачай **KanjiDesk.exe** и запусти.
+
+            Python и Node.js ставить не нужно. Окно открывается через WebView2 (уже есть в Windows 10/11).
+
+            Ключ Gemini для мнемоник — файл `%APPDATA%\KanjiDesk\gemini_api_key.env`.

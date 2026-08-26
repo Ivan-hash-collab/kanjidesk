@@ -1,23 +1,33 @@
-const YOUON = /[ゃゅょぁぃぅぇぉャュョァィゥェォ]/
+import { loadGzJson } from './gzipJson'
+import { kataToHira } from './kana'
 
-export function moraList(kana: string): string[] {
-  const s = [...(kana || '')].filter((ch) => /[\u3040-\u30FFー]/.test(ch)).join('')
-  const out: string[] = []
-  for (let i = 0; i < s.length; i++) {
-    const cur = s[i] ?? ''
-    const nxt = s[i + 1] ?? ''
-    if (nxt && (YOUON.test(nxt) || nxt === 'ー' || nxt === 'っ' || nxt === 'ッ')) {
-      if (nxt === 'っ' || nxt === 'ッ') {
-        out.push(cur)
-        out.push(nxt)
-        i += 1
-        continue
-      }
-      out.push(cur + nxt)
-      i += 1
-      continue
-    }
-    out.push(cur)
+type PitchTable = Record<string, number[]>
+
+let table: PitchTable | null = null
+let tried = false
+
+function key(written: string, kana: string): string {
+  return `${written}|${kataToHira(kana).replace(/[.\-\s]/g, '')}`
+}
+
+export async function ensurePitch(): Promise<PitchTable> {
+  if (table) return table
+  if (tried) return {}
+  tried = true
+  try {
+    table = await loadGzJson<PitchTable>('./data/pitch.json.gz')
+  } catch {
+    table = {}
   }
-  return out.filter(Boolean)
+  return table
+}
+
+export function pitchOf(written: string, kana: string, ready: PitchTable | null = table): number[] | null {
+  if (!ready) return null
+  const k = kataToHira(kana || '').replace(/[.\-\s]/g, '')
+  const hit =
+    (written && k ? ready[key(written, k)] : undefined) ||
+    (k ? ready[k] : undefined) ||
+    (written ? ready[written] : undefined)
+  return hit?.length ? hit : null
 }

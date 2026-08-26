@@ -361,10 +361,27 @@ export function loadHistory(): SessionReport[] {
 export function saveSessionReport(rep: SessionReport): SessionReport[] {
   const next = [rep, ...loadHistory()].slice(0, 40)
   localStorage.setItem(HIST_KEY, JSON.stringify(next))
+  notifyHistory()
   return next
 }
 
-export type ResetScope = 'settings' | 'lists' | 'progress' | 'notes' | 'all'
+export const HISTORY_EVENT = 'kanjidesk-history'
+export const META_EVENT = 'kanjidesk-meta'
+
+export function notifyHistory(): void {
+  window.dispatchEvent(new Event(HISTORY_EVENT))
+}
+
+export function notifyMeta(): void {
+  window.dispatchEvent(new Event(META_EVENT))
+}
+
+export function clearHistory(): void {
+  localStorage.removeItem(HIST_KEY)
+  notifyHistory()
+}
+
+export type ResetScope = 'settings' | 'lists' | 'progress' | 'notes' | 'all' | 'history'
 
 export function factoryReset(scope: ResetScope): void {
   if (scope === 'settings' || scope === 'all') localStorage.removeItem(SETTINGS_KEY)
@@ -372,12 +389,18 @@ export function factoryReset(scope: ResetScope): void {
   if (scope === 'notes' || scope === 'all') {
     localStorage.removeItem(NOTES_KEY)
     localStorage.removeItem(META_KEY)
+    notifyMeta()
+  }
+  if (scope === 'history') {
+    clearHistory()
+    return
   }
   if (scope === 'progress' || scope === 'all') {
     localStorage.removeItem(STATS_KEY)
     localStorage.removeItem(HIST_KEY)
     localStorage.removeItem(LAST_KEY)
     localStorage.removeItem(STORAGE_KEYS.memoIds)
+    notifyHistory()
   }
   if (scope === 'all' && 'indexedDB' in window) {
     indexedDB.deleteDatabase('kanjidesk-strokes')

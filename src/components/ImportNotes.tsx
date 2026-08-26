@@ -1,47 +1,57 @@
 import { useState } from 'react'
-import { charsFromGrid, notesFromGrid, previewFile, suggestCols, type TablePreview } from '../lib/noteImport'
+import { charsFromGrid, notesFromGrid, previewFile, previewText, suggestCols, type TablePreview } from '../lib/noteImport'
 import { persistKanjiFields } from '../lib/notesRepo'
-import { mnemonicOf, noteOf } from '../lib/storage'
+import { mnemonicOf, noteOf, notifyMeta } from '../lib/storage'
 
 type Props = {
   onClose: () => void
   onImported?: (n: number, chars: string[]) => void
   defaultTarget?: 'note' | 'mnemonic'
+  defaultKeep?: boolean
 }
 
-export function ImportNotes({ onClose, onImported, defaultTarget = 'note' }: Props) {
+export function ImportNotes({ onClose, onImported, defaultTarget = 'note', defaultKeep = false }: Props) {
   const [tables, setTables] = useState<TablePreview[]>([])
   const [ti, setTi] = useState(0)
   const [kanjiCol, setKanjiCol] = useState(0)
   const [noteCol, setNoteCol] = useState(1)
   const [header, setHeader] = useState(true)
-  const [keep, setKeep] = useState(true)
+  const [keep, setKeep] = useState(defaultKeep)
   const [target, setTarget] = useState<'note' | 'mnemonic'>(defaultTarget)
+  const [paste, setPaste] = useState('')
   const [msg, setMsg] = useState('')
   const [busy, setBusy] = useState(false)
   const table = tables[ti]
+
+  function applyPreview(list: TablePreview[]) {
+    if (!list.length || !list[0]?.rows.length) {
+      setMsg('Нет строк с данными')
+      setTables([])
+      return
+    }
+    setTables(list)
+    setTi(0)
+    const s = suggestCols(list[0])
+    setKanjiCol(s.kanji)
+    setNoteCol(s.note)
+    setMsg('')
+  }
 
   async function onFile(f: File | undefined) {
     if (!f) return
     setBusy(true)
     setMsg('')
     try {
-      const list = await previewFile(f)
-      if (!list.length || !list[0]?.rows.length) {
-        setMsg('В файле нет строк')
-        setTables([])
-        return
-      }
-      setTables(list)
-      setTi(0)
-      const s = suggestCols(list[0])
-      setKanjiCol(s.kanji)
-      setNoteCol(s.note)
+      applyPreview(await previewFile(f))
     } catch (e) {
       setMsg(e instanceof Error ? e.message : 'Не удалось прочитать файл')
     } finally {
       setBusy(false)
     }
+  }
+
+  function onPaste() {
+    applyPreview(previewText(paste))
   }
 
   async function apply() {
@@ -53,21 +63,32 @@ export function ImportNotes({ onClose, onImported, defaultTarget = 'note' }: Pro
       setMsg('Нет строк с кандзи и текстом в выбранных столбцах')
       return
     }
-    if (!confirm(`Записать ${n} знаков в ${target === 'mnemonic' ? 'мнемоники' : 'заметки'}?`)) return
+    const where = target === 'mnemonic' ? 'мнемоники' : 'заметки'
+    const warn = keep ? '' : ' Старые тексты в этом поле будут заменены.'
+    const verb = keep ? 'Записать в пустые' : 'Перезаписать'
+    if (!confirm(`${verb} ${n} знаков в поле «${where}»?${warn}`)) return
     setBusy(true)
     setMsg('')
     try {
       let written = 0
-      let failed = 0
+      let skipped = 0
+      let agentFail = 0
       for (const [ch, text] of Object.entries(map)) {
-        if (keep && target === 'mnemonic' && mnemonicOf(ch)) continue
-        if (keep && target === 'note' && noteOf(ch)) continue
+        const existing = target === 'mnemonic' ? mnemonicOf(ch) : noteOf(ch)
+        if (keep && existing.trim()) {
+          skipped += 1
+          continue
+        }
         const fields = target === 'mnemonic' ? { mnemonic: text } : { notes: text }
         const res = await persistKanjiFields(ch, fields)
-        if (res.ok) written += 1
-        else failed += 1
+        written += 1
+        if (!res.ok) agentFail += 1
       }
-      setMsg(`Сопоставлено ${n}, записано ${written}${failed ? `, ошибок ${failed}` : ''}`)
+      notifyMeta()
+      const bits = [`сопоставлено ${n}`, `записано ${written}`]
+      if (skipped) bits.push(`пропущено ${skipped}`)
+      if (agentFail) bits.push(`агент не принял ${agentFail} — тексты всё равно в словаре`)
+      setMsg(bits.join(', '))
       onImported?.(written, chars)
     } finally {
       setBusy(false)
@@ -86,18 +107,29 @@ export function ImportNotes({ onClose, onImported, defaultTarget = 'note' }: Pro
         </button>
       </header>
       <p className="muted">
-        CSV, Excel, TXT или SQLite/Anki. Сначала сопоставь столбцы: кандзи и текст. Куда писать — мнемоника знака
-        или свободная заметка.
+        CSV, Excel, TXT, SQLite/Anki или вставка. Сопоставь столбцы, выбери поле и режим: перезапись или только пустые.
       </p>
-      <label className="btn">
-        Файл
-        <input
-          type="file"
-          hidden
-          accept=".csv,.txt,.tsv,.xlsx,.xls,.db,.sqlite,.sqlite3,.anki2"
-          onChange={(e) => void onFile(e.target.files?.[0])}
-        />
-      </label>
+      <div className="row-actions wrap">
+        <label className="btn">
+          Файл
+          <input
+            type="file"
+            hidden
+            accept=".csv,.txt,.tsv,.xlsx,.xls,.db,.sqlite,.sqlite3,.anki2"
+            onChange={(e) => void onFile(e.target.files?.[0])}
+          />
+        </label>
+      </div>
+      <textarea
+        className="area compact"
+        rows={4}
+        placeholder={'漢\tсвоя история\n字\tзаметка или мнемоника'}
+        value={paste}
+        onChange={(e) => setPaste(e.target.value)}
+      />
+      <button type="button" className="btn" disabled={!paste.trim() || busy} onClick={onPaste}>
+        Разобрать вставку
+      </button>
       {busy ? <p className="muted">читаю…</p> : null}
       {tables.length > 1 ? (
         <label className="pref">
@@ -164,12 +196,20 @@ export function ImportNotes({ onClose, onImported, defaultTarget = 'note' }: Pro
             </span>
             <input type="checkbox" checked={header} onChange={(e) => setHeader(e.target.checked)} />
           </label>
-          <label className="pref">
+          <div className="pref">
             <span>
-              <b>Не затирать старые</b>
+              <b>Если поле уже заполнено</b>
+              <small>перезапись меняет текст у знака; «только пустые» пропускает его</small>
             </span>
-            <input type="checkbox" checked={keep} onChange={(e) => setKeep(e.target.checked)} />
-          </label>
+            <div className="seg">
+              <button type="button" className={!keep ? 'is-on' : ''} onClick={() => setKeep(false)}>
+                Перезаписать
+              </button>
+              <button type="button" className={keep ? 'is-on' : ''} onClick={() => setKeep(true)}>
+                Только пустые
+              </button>
+            </div>
+          </div>
           <div className="import-sample">
             {(header ? table.rows.slice(1, 6) : table.rows.slice(0, 5)).map((row, i) => (
               <p key={i}>
@@ -179,7 +219,7 @@ export function ImportNotes({ onClose, onImported, defaultTarget = 'note' }: Pro
             ))}
           </div>
           <button type="button" className="btn primary" disabled={busy} onClick={() => void apply()}>
-            Импортировать
+            {keep ? 'Импортировать' : 'Перезаписать'}
           </button>
         </>
       ) : null}

@@ -1225,6 +1225,29 @@ ruby.is-session { box-shadow: inset 0 -3px 0 var(--seal); }
 
 .dict-search { display: flex; flex-wrap: wrap; gap: 8px; max-width: 720px; }
 .dict-search .field { flex: 1; }
+.dict-hint { margin: 2px 0 8px; font-size: 12px; max-width: 720px; line-height: 1.4; }
+.dict-hint code {
+  font-family: var(--sans);
+  font-size: 11px;
+  padding: 0 4px;
+  border: 1px solid var(--line);
+}
+.dict-hits button .freq-tag,
+.word-row .freq-tag {
+  color: var(--seal);
+  flex-shrink: 0;
+}
+.dict-filters { display: grid; gap: 8px; margin: 4px 0 8px; }
+.dict-meta { margin: 0 0 8px; }
+.dict-hits.is-words button { align-items: baseline; }
+.dict-hits.is-words b { font-size: 18px; }
+.dict-hits.is-words button span {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px;
+  white-space: normal;
+}
 .furi-seg { flex-shrink: 0; }
 .word-head { font-size: 32px; line-height: 1.6; margin: 0; }
 .word-rows { list-style: none; margin: 0; padding: 0; display: grid; }
@@ -1241,7 +1264,14 @@ ruby.is-session { box-shadow: inset 0 -3px 0 var(--seal); }
   padding: 6px 4px;
   font-size: 18px;
 }
-.word-row span { font-size: 13px; color: var(--muted); font-family: var(--sans); }
+.word-row-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.pitch-block.is-compact { margin: 0; }
+.pitch-block.is-compact .pitch-svg { width: auto; height: 28px; }
 .word-row:hover { background: var(--seal-soft); }
 .kanji-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip {
@@ -1760,6 +1790,34 @@ button.pill:hover { border-color: var(--seal); color: var(--seal); }
 }
 .set-rows li.is-folder { grid-template-columns: 40px 1fr auto; align-items: start; }
 .set-rows li.is-list { cursor: grab; }
+.set-rows li.is-session {
+  background: var(--seal-soft);
+}
+.session-now {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  margin: 8px 0 16px;
+  border: 1px solid var(--line);
+  background: var(--sheet);
+}
+.session-now h3 {
+  margin: 0;
+  font-size: 17px;
+}
+.session-preview {
+  margin: 4px 0 0;
+  font-size: 18px;
+  line-height: 1.45;
+  word-break: break-word;
+}
+.archive-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+.archive-row .mode-row { width: 100%; }
 .set-rows li.is-drop,
 .drop-root.is-drop {
   outline: 2px solid var(--seal);

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { persistKanjiFields } from '../lib/notesRepo'
-import { mnemonicOf, noteOf } from '../lib/storage'
+import { META_EVENT, mnemonicOf, noteOf } from '../lib/storage'
 
 type Props = {
   char: string
@@ -12,9 +12,14 @@ export function KanjiPad({ char }: Props) {
   const [saved, setSaved] = useState('')
 
   useEffect(() => {
-    setNote(noteOf(char))
-    setMnemo(mnemonicOf(char))
+    const load = () => {
+      setNote(noteOf(char))
+      setMnemo(mnemonicOf(char))
+    }
+    load()
     setSaved('')
+    window.addEventListener(META_EVENT, load)
+    return () => window.removeEventListener(META_EVENT, load)
   }, [char])
 
   async function persist() {
@@ -30,7 +35,7 @@ export function KanjiPad({ char }: Props) {
           className="area compact"
           rows={4}
           value={mnemo}
-          placeholder="Своя история на этот знак. Импорт — в разделе Мнемоники."
+          placeholder="Своя история на этот знак. Массовый импорт — в шапке словаря или в Мнемониках."
           onChange={(e) => setMnemo(e.target.value)}
           onBlur={persist}
         />

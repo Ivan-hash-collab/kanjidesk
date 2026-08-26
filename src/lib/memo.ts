@@ -129,6 +129,8 @@ export const memoApi = {
     req<MemoSession>('/api/sessions', { method: 'POST', body: JSON.stringify({ text, title }) }),
   sessions: () => req<{ sessions: MemoArchiveRow[] }>('/api/sessions'),
   session: (id: number) => req<MemoSession>(`/api/sessions/${id}`),
+  deleteSession: (id: number) => req<{ ok: boolean; deleted: number; id: number }>(`/api/sessions/${id}`, { method: 'DELETE' }),
+  clearSessions: () => req<{ ok: boolean; deleted: number }>('/api/sessions', { method: 'DELETE' }),
   entry: (id: number, kanji: string) =>
     req<{ entry: SessionKanji; catalog: Record<string, unknown> }>(
       `/api/sessions/${id}/kanji/${encodeURIComponent(kanji)}`,
@@ -384,6 +386,20 @@ export async function ensureStudySession(chars: string[], title: string): Promis
 export function rememberMemoSession(id: number, chars: string[]) {
   const unique = [...new Set(chars.filter(Boolean))]
   saveIds({ ...loadIds(), studyId: id, studySig: unique.join('') })
+}
+
+export function forgetMemoSession(id: number) {
+  const ids = loadIds()
+  const extras = Object.fromEntries(Object.entries(ids.extras).filter(([, v]) => v !== id))
+  saveIds({
+    extras,
+    studyId: ids.studyId === id ? 0 : ids.studyId,
+    studySig: ids.studyId === id ? '' : ids.studySig,
+  })
+}
+
+export function forgetMemoSessions() {
+  localStorage.removeItem(STORE)
 }
 
 export async function sessionForKanji(

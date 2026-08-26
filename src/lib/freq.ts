@@ -38,6 +38,30 @@ export async function freqOfKanji(ch: string, dictFreq?: number | null): Promise
   return kanjiMap?.get(ch)?.r ?? dictFreq ?? null
 }
 
+export async function preloadFreq() {
+  await Promise.all([ensureWords(), ensureKanji()])
+}
+
+export function freqOfWordSync(
+  written: string,
+  extra: Iterable<string> = [],
+): { r: number; n?: number; kind: 'word' | 'kanji' } | null {
+  if (!wordMap) return null
+  const seen = new Set<string>()
+  for (const k of [written, ...extra]) {
+    if (!k || seen.has(k)) continue
+    seen.add(k)
+    const f = wordMap.get(k)
+    if (f) return { r: f.r, n: f.n, kind: 'word' }
+  }
+  const chars = [...written].filter((c) => CJK.test(c))
+  if (chars.length === 1 && kanjiMap) {
+    const kf = kanjiMap.get(chars[0])
+    if (kf) return { r: kf.r, kind: 'kanji' }
+  }
+  return null
+}
+
 export async function freqOfWord(
   written: string,
   extra: Iterable<string> = [],

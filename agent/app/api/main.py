@@ -23,12 +23,12 @@ from app.agent.study import (
 )
 from app.core.parse_kanji import unique_kanji
 from app.core.ref_catalog import context_for, lookup, save_user_fields, search as catalog_search
-from app.core.session import create_session, get_session, list_sessions
+from app.core.session import clear_sessions, create_session, delete_session, get_session, list_sessions
 from app.core.user_notes import clear_user_notes, get_user_note
 from app.db import LATEST_SCHEMA_VERSION, fetchall, init_db, set_setting, _user_version, connect
 from app.paths import UI_DIST
 
-app = FastAPI(title="KanjyMemo", version="0.3.2")
+app = FastAPI(title="KanjyMemo", version="0.3.3")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -173,6 +173,19 @@ async def api_session_upload(file: UploadFile = File(...)) -> dict[str, Any]:
 @app.get("/api/sessions")
 def api_sessions() -> dict[str, Any]:
     return {"sessions": list_sessions()}
+
+
+@app.delete("/api/sessions")
+def api_sessions_clear() -> dict[str, Any]:
+    return clear_sessions()
+
+
+@app.delete("/api/sessions/{session_id}")
+def api_session_delete(session_id: int) -> dict[str, Any]:
+    try:
+        return delete_session(session_id)
+    except KeyError:
+        raise HTTPException(404, "session not found") from None
 
 
 @app.get("/api/sessions/{session_id}")

@@ -1,6 +1,7 @@
 import { QuizSetup } from '../components/QuizSetup'
 import { ImportNotes } from '../components/ImportNotes'
 import { Tip } from '../components/Tip'
+import { forgetMemoSessions, memoApi } from '../lib/memo'
 import { defaultSettings, type ResetScope } from '../lib/storage'
 import type { KanjiDict, QuizId, Settings } from '../types'
 import { useState } from 'react'
@@ -12,6 +13,8 @@ type Props = {
   onReset: (scope: ResetScope) => void
 }
 
+type ConfirmKind = ResetScope | 'memoArchive'
+
 const QUIZ_TAB: { id: QuizId; name: string }[] = [
   { id: 'browse', name: 'Обзор' },
   { id: 'practice', name: 'Карточки' },
@@ -20,9 +23,10 @@ const QUIZ_TAB: { id: QuizId; name: string }[] = [
 ]
 
 export function AboutView({ dict, settings, onSettings, onReset }: Props) {
-  const [confirm, setConfirm] = useState<ResetScope | null>(null)
+  const [confirm, setConfirm] = useState<ConfirmKind | null>(null)
   const [quiz, setQuiz] = useState<QuizId>('draw')
   const [notes, setNotes] = useState(false)
+  const [wipeMsg, setWipeMsg] = useState('')
   return (
     <div className="panel about-panel page">
       <header className="panel-head compact">
@@ -41,7 +45,7 @@ export function AboutView({ dict, settings, onSettings, onReset }: Props) {
             <li>Anki → CopyKanji → буфер или «Открыть на ПК».</li>
             <li>Главная → загрузить сессию → Учёба.</li>
             <li>У каждого квиза свои настройки (шестерёнка в круге). Тест не берёт строгость пера.</li>
-            <li>Лампочка — твоя запись к знаку и история агента. Импорт CSV/Excel/TXT/DB в Списках или ниже.</li>
+            <li>Лампочка — твоя запись к знаку и история агента. Импорт CSV/Excel/TXT/DB — в Словаре, Списках или ниже; режим «Перезаписать» затирает поле.</li>
             <li>Интервалы только в Anki. Мнемоники — сначала набор (Главная / Списки / файл), потом истории сразу на все знаки.</li>
           </ol>
         </div>
@@ -71,7 +75,7 @@ export function AboutView({ dict, settings, onSettings, onReset }: Props) {
           {notes ? (
             <div className="preview-back" onClick={() => setNotes(false)} role="presentation">
               <div className="preview-pane" onClick={(e) => e.stopPropagation()}>
-                <ImportNotes onClose={() => setNotes(false)} />
+                <ImportNotes defaultKeep={false} onClose={() => setNotes(false)} />
               </div>
             </div>
           ) : null}
@@ -85,6 +89,10 @@ export function AboutView({ dict, settings, onSettings, onReset }: Props) {
                     ? 'Удалить все свои папки и списки?'
                     : confirm === 'progress'
                       ? 'Обнулить серию, историю кругов и последнюю сессию?'
+                      : confirm === 'history'
+                        ? 'Очистить календарь кругов на главной? Серия и текущий набор останутся.'
+                        : confirm === 'memoArchive'
+                          ? 'Удалить архив сессий мнемоник? Свои мнемоники и заметки в словаре не трогаются.'
                       : confirm === 'notes'
                         ? 'Удалить все пользовательские подсказки?'
                         : 'Вернуть настройки пера и квизов?'}
@@ -93,6 +101,19 @@ export function AboutView({ dict, settings, onSettings, onReset }: Props) {
                 type="button"
                 className="btn bad"
                 onClick={() => {
+                  if (confirm === 'memoArchive') {
+                    void (async () => {
+                      try {
+                        await memoApi.clearSessions()
+                        forgetMemoSessions()
+                        setWipeMsg('Архив мнемоник очищен')
+                      } catch (e) {
+                        setWipeMsg(e instanceof Error ? e.message : 'Не удалось очистить архив')
+                      }
+                      setConfirm(null)
+                    })()
+                    return
+                  }
                   onReset(confirm)
                   setConfirm(null)
                 }}
@@ -104,7 +125,7 @@ export function AboutView({ dict, settings, onSettings, onReset }: Props) {
               </button>
             </div>
           ) : (
-            <div className="row-actions">
+            <div className="row-actions wrap">
               <Tip label="Перо, строгость, фуригана — как при первом запуске">
                 <button type="button" className="btn" onClick={() => setConfirm('settings')}>
                   Настройки
@@ -116,8 +137,14 @@ export function AboutView({ dict, settings, onSettings, onReset }: Props) {
               <button type="button" className="btn" onClick={() => setConfirm('notes')}>
                 Заметки
               </button>
+              <button type="button" className="btn" onClick={() => setConfirm('history')}>
+                История кругов
+              </button>
+              <button type="button" className="btn" onClick={() => setConfirm('memoArchive')}>
+                Архив мнемоник
+              </button>
               <button type="button" className="btn" onClick={() => setConfirm('progress')}>
-                Прогресс
+                Серия и прогресс
               </button>
               <button type="button" className="btn bad" onClick={() => setConfirm('all')}>
                 Всё
@@ -127,6 +154,7 @@ export function AboutView({ dict, settings, onSettings, onReset }: Props) {
               </button>
             </div>
           )}
+          {wipeMsg ? <p className="muted">{wipeMsg}</p> : null}
         </section>
       </div>
     </div>

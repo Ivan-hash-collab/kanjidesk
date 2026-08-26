@@ -21,51 +21,60 @@ function morae(kana: string): string[] {
   return out.filter(Boolean)
 }
 
-type Props = {
-  kana: string
-  /** NHK-style drop after this mora (1-based). 0 = heiban. */
-  pattern?: number | null
+function heights(n: number, drop: number): boolean[] {
+  return Array.from({ length: n }, (_, i) => {
+    if (drop === 0) return i > 0
+    if (drop === 1) return i === 0
+    if (i === 0) return false
+    return i < drop
+  })
 }
 
-export function PitchAccent({ kana, pattern }: Props) {
+type Props = {
+  kana: string
+  pattern?: number | null
+  patterns?: number[]
+  compact?: boolean
+}
+
+export function PitchAccent({ kana, pattern, patterns, compact }: Props) {
   const m = morae(kana)
   if (!m.length) return null
   const n = m.length
-  const drop = pattern == null || pattern < 0 ? null : pattern
-  const w = Math.max(120, n * 28 + 16)
-  const h = 44
-  const ys = { high: 10, low: 28 }
-  const pts: { x: number; y: number }[] = []
-  for (let i = 0; i < n; i++) {
-    const x = 14 + i * 28
-    let high = true
-    if (drop == null) high = true
-    else if (drop === 0) high = i > 0
-    else high = i < drop && i > 0 ? true : i === 0 ? drop !== 1 : false
-    if (drop === 1) high = i === 0
-    pts.push({ x, y: high ? ys.high : ys.low })
-  }
+  const all = (patterns?.length ? patterns : pattern != null && pattern >= 0 ? [pattern] : []).filter(
+    (p) => p >= 0,
+  )
+  const drop = all[0]
+  const known = drop != null
+  const step = compact ? 16 : 28
+  const w = Math.max(compact ? 48 : 120, n * step + (compact ? 10 : 16))
+  const h = compact ? 28 : 44
+  const ys = compact ? { high: 6, low: 16 } : { high: 10, low: 28 }
+  const high = known ? heights(n, drop) : m.map(() => true)
+  const pts = m.map((_, i) => ({ x: (compact ? 8 : 14) + i * step, y: high[i] ? ys.high : ys.low }))
   const line = pts.map((p) => `${p.x},${p.y}`).join(' ')
+  const label =
+    !known
+      ? 'питч не найден в Kanjium'
+      : drop === 0
+        ? 'хеибан (0)'
+        : `акцент ${all.map((p) => (p === 0 ? '0' : String(p))).join('/')}`
   return (
-    <figure className="pitch-block">
-      <svg className="pitch-svg" viewBox={`0 0 ${w} ${h}`} role="img" aria-label="питч">
-        <polyline points={line} className="pitch-line" fill="none" />
+    <figure className={`pitch-block ${compact ? 'is-compact' : ''} ${known ? '' : 'is-unk'}`}>
+      <svg className="pitch-svg" viewBox={`0 0 ${w} ${h}`} role="img" aria-label={label}>
+        <polyline points={line} className={`pitch-line ${known ? '' : 'is-unk'}`} fill="none" />
         {pts.map((p, i) => (
           <g key={i}>
-            <circle cx={p.x} cy={p.y} r="3.2" className="pitch-dot" />
-            <text x={p.x} y={h - 2} textAnchor="middle" className="pitch-mora">
-              {m[i]}
-            </text>
+            <circle cx={p.x} cy={p.y} r={compact ? 2.2 : 3.2} className={`pitch-dot ${known ? '' : 'is-unk'}`} />
+            {compact ? null : (
+              <text x={p.x} y={h - 2} textAnchor="middle" className="pitch-mora">
+                {m[i]}
+              </text>
+            )}
           </g>
         ))}
       </svg>
-      <figcaption className="muted">
-        {drop == null
-          ? 'моры слова · точный питч в открытых данных не размечен'
-          : drop === 0
-            ? 'хеибан (0)'
-            : `акцент на море ${drop}`}
-      </figcaption>
+      {compact ? null : <figcaption className="muted">{label}</figcaption>}
     </figure>
   )
 }

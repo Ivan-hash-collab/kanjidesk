@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { LineChart } from '../components/Chart'
 import { uniqueKanji } from '../lib/kanji'
 import { summarize } from '../lib/quality'
 import { dailyStudySeries } from '../lib/statsCharts'
-import { loadHistory, localDayKey } from '../lib/storage'
+import { HISTORY_EVENT, clearHistory, loadHistory, localDayKey } from '../lib/storage'
 import type { AnkiSessionFile, SessionReport, Stats } from '../types'
 
 type Props = {
@@ -30,7 +30,14 @@ export function HomeView({ stats, last, onStart, onMemo }: Props) {
   const [days, setDays] = useState(28)
   const [tab, setTab] = useState(0)
   const [picked, setPicked] = useState<string | null>(null)
-  const hist = useMemo(() => loadHistory(), [stats.writesTotal, last.join('')])
+  const [histTick, setHistTick] = useState(0)
+  const [wipe, setWipe] = useState(false)
+  useEffect(() => {
+    const bump = () => setHistTick((n) => n + 1)
+    window.addEventListener(HISTORY_EVENT, bump)
+    return () => window.removeEventListener(HISTORY_EVENT, bump)
+  }, [])
+  const hist = useMemo(() => loadHistory(), [stats.writesTotal, last.join(''), histTick])
 
   const heat = useMemo(() => {
     const map = new Map<string, SessionReport[]>()
@@ -187,6 +194,33 @@ export function HomeView({ stats, last, onStart, onMemo }: Props) {
       ) : (
         <p className="muted">Нажми день — что было в кругах.</p>
       )}
+      {hist.length ? (
+        wipe ? (
+          <div className="confirm-strip">
+            <p>Очистить календарь кругов? Серия и прописи останутся.</p>
+            <button
+              type="button"
+              className="btn bad"
+              onClick={() => {
+                clearHistory()
+                setPicked(null)
+                setWipe(false)
+              }}
+            >
+              Очистить
+            </button>
+            <button type="button" className="btn" onClick={() => setWipe(false)}>
+              Нет
+            </button>
+          </div>
+        ) : (
+          <div className="row-actions">
+            <button type="button" className="btn ghost" onClick={() => setWipe(true)}>
+              Очистить историю кругов
+            </button>
+          </div>
+        )
+      ) : null}
 
       <section className="dash-card">
         <div className="dash-guide">

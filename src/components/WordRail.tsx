@@ -2,10 +2,14 @@ import { useEffect, useMemo, useState } from 'react'
 import { meaningLine, uniqueKanji } from '../lib/kanji'
 import { findWord, sentencesFor, wordsForKanji, wordsForReading, type LexWord, type Sentence } from '../lib/lexicon'
 import { addScanTerms } from '../lib/scan'
+import { toRomaji } from '../lib/kana'
 import type { FuriMode, KanjiDict } from '../types'
+import { DictFilters } from './DictFilters'
 import { WordRank } from './FreqTag'
 import { KanjiRun } from './KanjiRun'
 import { SentList } from './SentList'
+import { filterWords, type DictSort, type JlptFilter } from '../lib/dictSearch'
+import { PitchAccent } from './PitchAccent'
 
 type Props = {
   char: string
@@ -31,13 +35,16 @@ function WordList({
   if (!words.length) return null
   return (
     <ul className="word-rows compact">
-      {words.slice(0, 12).map((w) => (
+      {words.map((w) => (
         <li key={w.written + w.kana}>
           <button type="button" className="word-row" onClick={() => onOpen(w.written)}>
-            <KanjiRun text={w.written} furi={furi} wordReading={w.kana} />
+            <span className="word-row-main">
+              <KanjiRun text={w.written} furi={furi} wordReading={w.kana} />
+              <PitchAccent kana={w.kana} patterns={w.pitch} compact />
+            </span>
             <span>
               {w.meanings[0] || w.kana || meaningLine(dict[w.written[0]], 1)}{' '}
-              <WordRank written={w.written} alts={w.alts} kana={w.kana} dict={dict} />
+              <WordRank written={w.written} alts={w.alts} kana={w.kana} dict={dict} common={w.common} />
             </span>
           </button>
         </li>
@@ -50,6 +57,8 @@ export function WordRail({ char, dict, furi, showGloss = true, reading, onKanji 
   const [words, setWords] = useState<LexWord[]>([])
   const [sents, setSents] = useState<Sentence[]>([])
   const [peek, setPeek] = useState<LexWord | null>(null)
+  const [jlpt, setJlpt] = useState<JlptFilter>('all')
+  const [sort, setSort] = useState<DictSort>('freq')
 
   useEffect(() => {
     let live = true
@@ -71,6 +80,18 @@ export function WordRail({ char, dict, furi, showGloss = true, reading, onKanji 
   }, [words, reading, char, dict])
 
   const shown = grouped ? [...grouped.exact, ...grouped.stem] : words
+  const filtered = useMemo(
+    () => filterWords(shown, '', dict, jlpt, sort, 120),
+    [shown, dict, jlpt, sort],
+  )
+  const filteredExact = useMemo(
+    () => (grouped ? filterWords(grouped.exact, '', dict, jlpt, sort, 60) : []),
+    [grouped, dict, jlpt, sort],
+  )
+  const filteredStem = useMemo(
+    () => (grouped ? filterWords(grouped.stem, '', dict, jlpt, sort, 60) : []),
+    [grouped, dict, jlpt, sort],
+  )
 
   const writings = useMemo(
     () => [...new Set(shown.flatMap((w) => [w.written, ...(w.alts ?? [])]))],
@@ -97,7 +118,9 @@ export function WordRail({ char, dict, furi, showGloss = true, reading, onKanji 
     <aside className="word-rail">
       <p className="kicker">
         {reading ? `Слова с чтением ${reading}` : `Слова с ${char}`}
+        {shown.length ? ` · ${filtered.length} из ${shown.length}` : ''}
       </p>
+      <DictFilters jlpt={jlpt} onJlpt={setJlpt} sort={sort} onSort={setSort} kind="words" />
       {peek ? (
         <div className="word-peek">
           <button type="button" className="btn ghost" onClick={() => setPeek(null)}>
@@ -106,7 +129,11 @@ export function WordRail({ char, dict, furi, showGloss = true, reading, onKanji 
           <p className="word-head">
             <KanjiRun text={peek.written} furi={furi} wordReading={peek.kana} />
           </p>
-          <p className="muted">{peek.kana || '—'}</p>
+          <p className="muted">
+            {peek.kana || '—'}
+            {peek.kana ? ` · ${toRomaji(peek.kana)}` : ''}
+          </p>
+          <PitchAccent kana={peek.kana} patterns={peek.pitch} />
           {peek.meanings.length ? (
             <ol className="gloss-list">
               {peek.meanings.map((g) => (
@@ -136,26 +163,31 @@ export function WordRail({ char, dict, furi, showGloss = true, reading, onKanji 
           {grouped ? (
             grouped.exact.length || grouped.stem.length ? (
               <>
-                {grouped.exact.length ? (
+                {filteredExact.length ? (
                   <>
                     <p className="kicker">Словарная форма</p>
-                    <WordList words={grouped.exact} furi={furi} dict={dict} onOpen={(w) => void openWord(w)} />
+                    <WordList words={filteredExact} furi={furi} dict={dict} onOpen={(w) => void openWord(w)} />
                   </>
                 ) : null}
-                {grouped.stem.length ? (
+                {filteredStem.length ? (
                   <>
                     <p className="kicker">Другие формы и основа</p>
-                    <WordList words={grouped.stem} furi={furi} dict={dict} onOpen={(w) => void openWord(w)} />
+                    <WordList words={filteredStem} furi={furi} dict={dict} onOpen={(w) => void openWord(w)} />
                   </>
+                ) : null}
+                {!filteredExact.length && !filteredStem.length ? (
+                  <p className="muted">Нет слов с этим JLPT для данной основы.</p>
                 ) : null}
               </>
             ) : (
               <p className="muted">Нет вхождений этой основы в текущем списке.</p>
             )
-          ) : shown.length ? (
-            <WordList words={shown} furi={furi} dict={dict} onOpen={(w) => void openWord(w)} />
+          ) : filtered.length ? (
+            <WordList words={filtered} furi={furi} dict={dict} onOpen={(w) => void openWord(w)} />
           ) : (
-            <p className="muted">Слова подгрузятся, если есть сеть или локальный корпус.</p>
+            <p className="muted">
+              {words.length ? 'Нет слов с этим фильтром.' : 'Слова подгрузятся, если есть сеть или локальный корпус.'}
+            </p>
           )}
           <SentList
             sents={sents}

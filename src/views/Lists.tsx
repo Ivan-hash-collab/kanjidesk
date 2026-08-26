@@ -9,6 +9,8 @@ import type { CustomList, KanjiDict } from '../types'
 
 type Props = {
   dict: KanjiDict
+  session?: string[]
+  sessionTitle?: string
   onOpen: (chars: string[], name: string) => void
   onMemo: (chars: string[], name: string) => void
 }
@@ -34,7 +36,13 @@ function nid() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
 }
 
-export function ListsView({ dict, onOpen, onMemo: openMemo }: Props) {
+function sameChars(a: string[], b: string[]): boolean {
+  if (!a.length || a.length !== b.length) return false
+  const set = new Set(a)
+  return b.every((ch) => set.has(ch))
+}
+
+export function ListsView({ dict, session = [], sessionTitle = '', onOpen, onMemo: openMemo }: Props) {
   const [lists, setLists] = useState<CustomList[]>(() => loadLists())
   const [cwd, setCwd] = useState<string | null>(null)
   const [chunk, setChunk] = useState(20)
@@ -46,6 +54,7 @@ export function ListsView({ dict, onOpen, onMemo: openMemo }: Props) {
   const [paste, setPaste] = useState('')
   const [confirm, setConfirm] = useState<Confirm>(null)
   const [notesOpen, setNotesOpen] = useState(false)
+  const [savedMsg, setSavedMsg] = useState('')
 
   const jlpt = useMemo(
     () =>
@@ -119,6 +128,26 @@ export function ListsView({ dict, onOpen, onMemo: openMemo }: Props) {
     persist(lists.map((x) => (x.id === id ? { ...x, parentId: folderId } : x)))
   }
 
+  function saveSession() {
+    if (!session.length) return
+    const exists = lists.find((x) => x.kind === 'list' && sameChars(x.chars, session))
+    if (exists) {
+      setSavedMsg(`Уже в списках: «${exists.name}»`)
+      return
+    }
+    persist([
+      {
+        id: nid(),
+        name: sessionTitle.trim() || `Сессия ${lists.filter((x) => x.kind === 'list').length + 1}`,
+        kind: 'list',
+        parentId: cwd,
+        chars: session,
+      },
+      ...lists,
+    ])
+    setSavedMsg('Сохранено в свои списки')
+  }
+
   function onListDragStart(e: DragEvent, id: string) {
     e.dataTransfer.setData('text/plain', id)
     e.dataTransfer.setData('text/kanjidesk-list', id)
@@ -161,6 +190,41 @@ export function ListsView({ dict, onOpen, onMemo: openMemo }: Props) {
         = оставшиеся 常用 (grade 8), не «8 класс».
       </p>
 
+      {session.length ? (
+        <section className="session-now">
+          <div>
+            <p className="kicker">Сейчас в работе</p>
+            <h3>{sessionTitle || 'Текущая сессия'}</h3>
+            <p className="muted">{session.length} кандзи · этот набор открыт в учёбе и мнемониках</p>
+            <p className="jp session-preview">
+              {session.slice(0, 24).join(' ')}
+              {session.length > 24 ? ' …' : ''}
+            </p>
+          </div>
+          <div className="row-actions wrap">
+            <button
+              type="button"
+              className="btn"
+              onClick={() => setPreview({ chars: session, name: sessionTitle || 'Сессия' })}
+            >
+              Просмотр
+            </button>
+            <button type="button" className="btn primary study-btn" onClick={() => onOpen(session, sessionTitle || 'Сессия')}>
+              Учёба
+            </button>
+            <button type="button" className="btn" onClick={() => openMemo(session, sessionTitle || 'Сессия')}>
+              Мнемоники
+            </button>
+            <button type="button" className="btn" onClick={saveSession}>
+              В свои списки
+            </button>
+          </div>
+          {savedMsg ? <p className="muted">{savedMsg}</p> : null}
+        </section>
+      ) : (
+        <p className="muted">Нет текущей сессии. Открой список из раздела ниже — он появится здесь.</p>
+      )}
+
       {preview ? (
         <ListPreview
           chars={preview.chars}
@@ -182,7 +246,7 @@ export function ListsView({ dict, onOpen, onMemo: openMemo }: Props) {
       {notesOpen ? (
         <div className="preview-back" onClick={() => setNotesOpen(false)} role="presentation">
           <div className="preview-pane" onClick={(e) => e.stopPropagation()}>
-            <ImportNotes onClose={() => setNotesOpen(false)} />
+            <ImportNotes defaultKeep={false} onClose={() => setNotesOpen(false)} />
           </div>
         </div>
       ) : null}
@@ -325,14 +389,16 @@ export function ListsView({ dict, onOpen, onMemo: openMemo }: Props) {
             ) : (
               <li
                 key={l.id}
-                className="is-list"
+                className={`is-list ${sameChars(l.chars, session) ? 'is-session' : ''}`}
                 draggable
                 onDragStart={(e) => onListDragStart(e, l.id)}
               >
                 <b className="set-glyph jp">{l.chars[0] || '漢'}</b>
                 <div>
                   <strong>{l.name}</strong>
-                  <span>{l.chars.length} кандзи</span>
+                  <span>
+                    {l.chars.length} кандзи{sameChars(l.chars, session) ? ' · сейчас в сессии' : ''}
+                  </span>
                 </div>
                 <button type="button" className="btn" onClick={() => setPreview({ chars: l.chars, name: l.name })}>
                   Просмотр
@@ -356,7 +422,7 @@ export function ListsView({ dict, onOpen, onMemo: openMemo }: Props) {
       <Fold title="JLPT" meta="KANJIDIC · N5–N1">
         <ul className="set-rows">
           {jlpt.map((row) => (
-            <li key={row.n}>
+            <li key={row.n} className={sameChars(row.chars, session) ? 'is-session' : ''}>
               <b className="set-badge">{jlptLabel(row.n)}</b>
               <div>
                 <strong>
@@ -390,7 +456,7 @@ export function ListsView({ dict, onOpen, onMemo: openMemo }: Props) {
         </p>
         <ul className="set-rows">
           {grades.map((row) => (
-            <li key={row.g}>
+            <li key={row.g} className={sameChars(row.chars, session) ? 'is-session' : ''}>
               <b className="set-badge school">{gradeBadge(row.g)}</b>
               <div>
                 <strong>{gradeLabel(row.g)}</strong>
@@ -415,7 +481,7 @@ export function ListsView({ dict, onOpen, onMemo: openMemo }: Props) {
               ['Имена · 人名', jinmei],
             ] as const
           ).map(([label, chars]) => (
-            <li key={label}>
+            <li key={label} className={sameChars(chars, session) ? 'is-session' : ''}>
               <b className="set-badge">漢</b>
               <div>
                 <strong>{label}</strong>

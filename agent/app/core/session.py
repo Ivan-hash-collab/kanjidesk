@@ -315,3 +315,18 @@ def delete_run(session_id: int, run_id: str | None = None) -> dict[str, Any]:
 def latest_session_id() -> int | None:
     row = fetchone("SELECT id FROM study_sessions ORDER BY id DESC LIMIT 1")
     return int(row["id"]) if row else None
+
+
+def delete_session(session_id: int) -> dict[str, Any]:
+    row = fetchone("SELECT id FROM study_sessions WHERE id = ?", (session_id,))
+    if row is None:
+        raise KeyError(session_id)
+    execute("DELETE FROM study_sessions WHERE id = ?", (session_id,))
+    return {"ok": True, "deleted": 1, "id": session_id}
+
+
+def clear_sessions() -> dict[str, Any]:
+    row = fetchone("SELECT COUNT(*) AS n FROM study_sessions")
+    n = int(row["n"]) if row else 0
+    execute("DELETE FROM study_sessions")
+    return {"ok": True, "deleted": n}

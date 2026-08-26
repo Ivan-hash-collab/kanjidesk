@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Dialog } from '../components/Dialog'
 import { ImportNotes } from '../components/ImportNotes'
 import { MemoWorkbench, useMemoSession } from '../components/MemoWorkbench'
-import { memoApi, pingMemo, rememberMemoSession, type MemoArchiveRow } from '../lib/memo'
+import { forgetMemoSession, forgetMemoSessions, memoApi, pingMemo, rememberMemoSession, type MemoArchiveRow } from '../lib/memo'
 import type { KanjiDict } from '../types'
 
 type Props = {
@@ -31,18 +31,26 @@ export function MnemonicsView({
   const [ok, setOk] = useState<boolean | null>(null)
   const [imp, setImp] = useState(false)
   const [archive, setArchive] = useState<MemoArchiveRow[]>([])
+  const [wipe, setWipe] = useState(false)
+  const [archMsg, setArchMsg] = useState('')
   const { sess, err, busy, reload } = useMemoSession(ok && opened && chars.length ? chars : [], title)
 
   useEffect(() => {
     void pingMemo().then(setOk)
   }, [])
 
+  async function loadArchive() {
+    try {
+      const r = await memoApi.sessions()
+      setArchive(r.sessions || [])
+    } catch {
+      /* ignore */
+    }
+  }
+
   useEffect(() => {
     if (!ok) return
-    void memoApi
-      .sessions()
-      .then((r) => setArchive(r.sessions || []))
-      .catch(() => undefined)
+    void loadArchive()
   }, [ok, opened, sess?.id])
 
   if (!opened) {
@@ -84,9 +92,43 @@ export function MnemonicsView({
         {archive.length ? (
           <section className="setup-sec">
             <p className="setup-label">Архив сессий</p>
+            {wipe ? (
+              <div className="confirm-strip">
+                <p>Удалить все сессии агента? Свои мнемоники в словаре останутся.</p>
+                <button
+                  type="button"
+                  className="btn bad"
+                  onClick={() => {
+                    void (async () => {
+                      try {
+                        await memoApi.clearSessions()
+                        forgetMemoSessions()
+                        setArchive([])
+                        setArchMsg('')
+                      } catch (e) {
+                        setArchMsg(e instanceof Error ? e.message : 'Не удалось очистить архив')
+                      }
+                      setWipe(false)
+                    })()
+                  }}
+                >
+                  Очистить
+                </button>
+                <button type="button" className="btn" onClick={() => setWipe(false)}>
+                  Нет
+                </button>
+              </div>
+            ) : (
+              <div className="row-actions">
+                <button type="button" className="btn ghost" onClick={() => setWipe(true)}>
+                  Очистить архив
+                </button>
+              </div>
+            )}
+            {archMsg ? <p className="status-bad">{archMsg}</p> : null}
             <ul className="archive-list">
-              {archive.slice(0, 12).map((row) => (
-                <li key={row.id}>
+              {archive.map((row) => (
+                <li key={row.id} className="archive-row">
                   <button
                     type="button"
                     className="mode-row is-plain"
@@ -104,6 +146,25 @@ export function MnemonicsView({
                         {row.kanji_count} знаков · разобрано {row.analyzed_count ?? 0} · сообщений {row.message_count ?? 0}
                       </small>
                     </span>
+                  </button>
+                  <button
+                    type="button"
+                    className="btn ghost"
+                    aria-label={`Удалить «${row.title}»`}
+                    onClick={() => {
+                      if (!confirm(`Удалить сессию «${row.title}» из архива?`)) return
+                      void (async () => {
+                        try {
+                          await memoApi.deleteSession(row.id)
+                          forgetMemoSession(row.id)
+                          setArchive((cur) => cur.filter((x) => x.id !== row.id))
+                        } catch (e) {
+                          setArchMsg(e instanceof Error ? e.message : 'Не удалось удалить')
+                        }
+                      })()
+                    }}
+                  >
+                    ×
                   </button>
                 </li>
               ))}

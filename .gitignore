@@ -1,4 +1,5 @@
 # Logs and local runtime
+build
 logs
 *.log
 npm-debug.log*

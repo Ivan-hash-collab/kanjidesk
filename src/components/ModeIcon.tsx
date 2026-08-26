@@ -7,6 +7,7 @@ const ICONS: Record<string, string> = {
   mcq: 'M5 7h14M5 12h10M5 17h14 M18 10l2 2 4-4',
   selfcheck: 'M9 11l3 3 7-8 M5 19h14',
   read: 'M4 5h7v14H4z M13 5h7v14h-7z',
+  memo: 'M5 4h11a2 2 0 012 2v9l-4-2H7a2 2 0 01-2-2V4z M8 8h7 M8 11h5',
 }
 
 export function ModeIcon({ id }: { id: string }) {

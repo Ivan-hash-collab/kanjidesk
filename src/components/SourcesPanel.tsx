@@ -37,7 +37,10 @@ export function SourcesPanel({ dict }: Props) {
       loadJson<unknown>('./data/trees.json')
         .then(() => true)
         .catch(() => false),
-    ]).then(([words, kfreq, sents, jm, trees]) => {
+      loadGzJson<Record<string, unknown>>('./data/pitch.json.gz')
+        .then((x) => Object.keys(x).length)
+        .catch(() => 0),
+    ]).then(([words, kfreq, sents, jm, trees, pitch]) => {
       if (!live) return
       setRows([
         {
@@ -70,8 +73,15 @@ export function SourcesPanel({ dict }: Props) {
         },
         {
           side: 'слова',
-          name: 'JMdict common',
-          role: 'написания, кана, английские глоссы у кандзи',
+          name: 'Kanjium pitch',
+          role: 'диаграмма питча (хеибан / атамадака / накадака)',
+          n: pitch ? `${pitch} ключей` : 'нет файла',
+          on: Boolean(pitch),
+        },
+        {
+          side: 'слова',
+          name: 'JMdict English (полный)',
+          role: 'написания, кана, английские глоссы — не common-only',
           n: jm ? `${jm} знаков с лексикой` : 'сеть: kanjiapi.dev',
           on: jm > 0,
         },

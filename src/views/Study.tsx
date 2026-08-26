@@ -18,7 +18,7 @@ import {
 import { buildMcq, type McqKind, type Question } from '../lib/quiz'
 import { fmtMs, settingsSummary, summarize } from '../lib/quality'
 import { speakJa } from '../lib/speech'
-import { loadHistory, markWritten, saveSessionReport, withQuiz } from '../lib/storage'
+import { HISTORY_EVENT, loadHistory, markWritten, saveSessionReport, withQuiz } from '../lib/storage'
 import type { BusyInfo, ItemLog, KanjiDict, SessionReport, Settings, SheetTab, StudyIntent, StudyMode, WriteReport } from '../types'
 import { SessionSummary } from './SessionSummary'
 
@@ -41,6 +41,7 @@ type Props = {
   onInner?: (inner: boolean) => void
   onSettings?: (s: Settings) => void
   onMode?: (mode: StudyMode) => void
+  onMemo?: (chars: string[], title: string) => void
 }
 
 export type StudyApi = {
@@ -175,6 +176,7 @@ export const StudyView = forwardRef<StudyApi, Props>(function StudyView(
     onInner,
     onSettings,
     onMode,
+    onMemo,
   },
   ref,
 ) {
@@ -293,6 +295,12 @@ export const StudyView = forwardRef<StudyApi, Props>(function StudyView(
   useEffect(() => {
     onMode?.(mode)
   }, [mode, onMode])
+
+  useEffect(() => {
+    const reload = () => setHistory(loadHistory())
+    window.addEventListener(HISTORY_EVENT, reload)
+    return () => window.removeEventListener(HISTORY_EVENT, reload)
+  }, [])
 
   useImperativeHandle(ref, () => ({
     pauseToSetup() {
@@ -625,6 +633,20 @@ export const StudyView = forwardRef<StudyApi, Props>(function StudyView(
               </button>
             </Tip>
           ))}
+          <Tip label="Истории на все знаки этого набора. Откроется вкладка Мнемоники.">
+            <button
+              type="button"
+              className="mode-row"
+              disabled={!chars.length || !onMemo}
+              onClick={() => onMemo?.(chars, title)}
+            >
+              <ModeIcon id="memo" />
+              <span className="mode-copy">
+                <b>Мнемоники</b>
+                <small>Создать истории по этому списку</small>
+              </span>
+            </button>
+          </Tip>
         </div>
       </div>
     )

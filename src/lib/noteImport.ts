@@ -95,6 +95,13 @@ export function charsFromGrid(rows: string[][], kanjiCol: number, header: boolea
   return uniqueKanji(rows.slice(start).map((r) => r[kanjiCol] ?? '').join(''))
 }
 
+export function previewText(text: string, name = 'вставка'): TablePreview[] {
+  const rows = asGrid(text)
+  if (!rows.length) return []
+  const headers = (rows[0] ?? []).map((c, i) => c || `колонка ${i + 1}`)
+  return [{ name, headers, rows }]
+}
+
 export async function previewFile(file: File): Promise<TablePreview[]> {
   const name = file.name.toLowerCase()
   if (name.endsWith('.xlsx') || name.endsWith('.xls')) {

@@ -1,6 +1,9 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import { CompTree } from '../components/CompTree'
+import { Dialog } from '../components/Dialog'
+import { DictFilters } from '../components/DictFilters'
 import { Fold } from '../components/Fold'
+import { ImportNotes } from '../components/ImportNotes'
 import { KanjiPad } from '../components/KanjiPad'
 import { FreqTag, WordRank } from '../components/FreqTag'
 import { KanjiRun } from '../components/KanjiRun'
@@ -9,9 +12,11 @@ import { ReadPills } from '../components/ReadPills'
 import { Tip } from '../components/Tip'
 import { SentList } from '../components/SentList'
 import { compositionOf, type CompNode } from '../lib/compose'
-import { freqLabel, freqOfKanji, freqOfWord } from '../lib/freq'
-import { gradeLabel, infoOf, jlptLabel, meaningLine, searchDict, uniqueKanji } from '../lib/kanji'
-import { findWord, sentencesFor, wordsForKanji, type LexWord, type Sentence } from '../lib/lexicon'
+import { freqLabel, freqOfKanji, freqOfWord, preloadFreq } from '../lib/freq'
+import { gradeLabel, infoOf, jlptLabel, meaningLine, uniqueKanji } from '../lib/kanji'
+import { allLocalWords, findWord, sentencesFor, wordsForKanji, type LexWord, type Sentence } from '../lib/lexicon'
+import { filterWords, parseDictQuery, searchKanji, wordJlpt, type DictKind, type DictSort, type JlptFilter } from '../lib/dictSearch'
+import { toRomaji } from '../lib/kana'
 import { addScanTerms } from '../lib/scan'
 import { speakJa } from '../lib/speech'
 import type { FuriMode, KanjiDict } from '../types'
@@ -67,8 +72,24 @@ export const DictionaryView = forwardRef<DictApi, Props>(function DictionaryView
   const skipPush = useRef(false)
   const req = useRef(0)
   const [missing, setMissing] = useState('')
+  const [imp, setImp] = useState(false)
+  const [kind, setKind] = useState<DictKind>('kanji')
+  const [jlpt, setJlpt] = useState<JlptFilter>('all')
+  const [sort, setSort] = useState<DictSort>('freq')
+  const [wordHits, setWordHits] = useState<LexWord[]>([])
+  const [lexReady, setLexReady] = useState(false)
+  const [romaSearch, setRomaSearch] = useState(true)
+  const parsed = useMemo(() => parseDictQuery(q), [q])
+  const scoreOpts = useMemo(
+    () => ({ noRomaji: !romaSearch || parsed.noRomaji, meaningOnly: parsed.meaningOnly, readingOnly: parsed.readingOnly }),
+    [romaSearch, parsed.noRomaji, parsed.meaningOnly, parsed.readingOnly],
+  )
 
-  const hits = useMemo(() => searchDict(dict, q), [dict, q])
+  const hits = useMemo(
+    () => searchKanji(dict, q, jlpt, sort, 240, scoreOpts),
+    [dict, q, jlpt, sort, scoreOpts],
+  )
+  const related = useMemo(() => filterWords(words, '', dict, jlpt, sort, 200), [words, dict, jlpt, sort])
   const info = infoOf(dict, kanji)
   const readings = useMemo(() => {
     const m: Record<string, string> = {}
@@ -80,8 +101,34 @@ export const DictionaryView = forwardRef<DictApi, Props>(function DictionaryView
   }, [words, word])
 
   useEffect(() => {
+    void Promise.all([allLocalWords(), preloadFreq()]).then(() => setLexReady(true))
+  }, [])
+
+  useEffect(() => {
     onDepth?.(stack.length)
   }, [stack.length, onDepth])
+
+  useEffect(() => {
+    if (kind !== 'words') return
+    let live = true
+    const query = parsed.text
+    const chars = uniqueKanji(query)
+    const delay = query.length ? 80 : 0
+    const t = window.setTimeout(() => {
+      void (async () => {
+        const source =
+          chars.length === 1 && query === chars[0]
+            ? await wordsForKanji(chars[0])
+            : await allLocalWords()
+        if (!live) return
+        setWordHits(filterWords(source, q, dict, jlpt, sort, 80, scoreOpts))
+      })()
+    }, delay)
+    return () => {
+      live = false
+      window.clearTimeout(t)
+    }
+  }, [kind, q, parsed.text, jlpt, sort, dict, scoreOpts])
 
   function pushFrame(f: Frame) {
     if (skipPush.current) {
@@ -221,8 +268,13 @@ export const DictionaryView = forwardRef<DictApi, Props>(function DictionaryView
   }
 
   function submitSearch() {
-    const t = q.trim()
-    if (!t) return
+    const t = parsed.text.trim() || q.trim()
+    if (!t && !parsed.commonOnly && parsed.jlpt == null) return
+    if (kind === 'words') {
+      if (wordHits[0]) void openWritten(wordHits[0].written)
+      else if (t) void openWritten(t)
+      return
+    }
     const chars = uniqueKanji(t)
     if (chars.length === 1 && t === chars[0]) void openKanji(chars[0])
     else if (chars.length || /[\u3040-\u30FFー]/.test(t)) void openWritten(t)
@@ -236,7 +288,19 @@ export const DictionaryView = forwardRef<DictApi, Props>(function DictionaryView
           <p className="kicker">Словарь</p>
           <h2>Кандзи и слова</h2>
         </div>
+        <button type="button" className="btn" onClick={() => setImp(true)}>
+          Импорт полей
+        </button>
       </header>
+      {imp ? (
+        <Dialog open onClose={() => setImp(false)} labelledBy="import-notes-title">
+          <ImportNotes
+            defaultTarget="mnemonic"
+            defaultKeep={false}
+            onClose={() => setImp(false)}
+          />
+        </Dialog>
+      ) : null}
 
       <form
         className="dict-search"
@@ -247,7 +311,7 @@ export const DictionaryView = forwardRef<DictApi, Props>(function DictionaryView
       >
         <input
           className="field"
-          placeholder="霧 · きり · fog · 猶予"
+          placeholder="霧 · mizu · fog · -roma · en:lewd · #n5"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           autoFocus
@@ -256,23 +320,79 @@ export const DictionaryView = forwardRef<DictApi, Props>(function DictionaryView
           Найти
         </button>
       </form>
+      <p className="dict-hint muted">
+        Команды: <code>-roma</code> не искать чтение по ромадзи · <code>en:lewd</code> только значение ·{' '}
+        <code>kana:みず</code> только чтение · <code>#n5</code> · <code>#common</code>
+      </p>
+      <DictFilters
+        kind={kind}
+        onKind={(next) => {
+          setKind(next)
+          if (next === 'words' && sort === 'strokes') setSort('freq')
+          if (next === 'kanji' && sort === 'len') setSort('freq')
+        }}
+        jlpt={jlpt}
+        onJlpt={setJlpt}
+        sort={sort}
+        onSort={setSort}
+        roma={romaSearch}
+        onRoma={setRomaSearch}
+      />
+      <p className="dict-meta muted">
+        {kind === 'kanji'
+          ? `${hits.length} знаков`
+          : lexReady || wordHits.length
+            ? `${wordHits.length} слов`
+            : 'загружаю словарь слов…'}
+        {parsed.text ? ` · по запросу «${parsed.text}»` : q.trim() ? '' : ' · каталог'}
+        {!romaSearch || parsed.noRomaji ? ' · без ромадзи' : ''}
+        {parsed.commonOnly ? ' · частотные' : ''}
+        {parsed.jlpt ? ` · N${parsed.jlpt}` : ''}
+      </p>
       {busy ? <p className="muted">{busy}</p> : null}
 
       <div className="dict-layout">
-        <div className="dict-hits">
-          {hits.map((ch) => (
-            <button
-              key={ch}
-              type="button"
-              className={ch === kanji && !word ? 'is-on' : ''}
-              onClick={() => void openKanji(ch)}
-            >
-              <b className="jp">{ch}</b>
-              <span>
-                {meaningLine(dict[ch], 2)} <FreqTag rank={dict[ch].freq} kind="kanji" jlpt={dict[ch].jlpt} />
-              </span>
-            </button>
-          ))}
+        <div className={`dict-hits ${kind === 'words' ? 'is-words' : ''}`}>
+          {kind === 'words'
+            ? wordHits.map((w) => (
+                <button
+                  key={`${w.written}|${w.kana}`}
+                  type="button"
+                  className={word?.written === w.written ? 'is-on' : ''}
+                  onClick={() => void openWritten(w.written)}
+                >
+                  <b className="jp">{w.written}</b>
+                  <span>
+                    {[w.kana, w.meanings[0], w.alts?.length ? w.alts.slice(0, 2).join('、') : '']
+                      .filter(Boolean)
+                      .join(' · ')}{' '}
+                    <WordRank written={w.written} alts={w.alts} kana={w.kana} dict={dict} common={w.common} />
+                  </span>
+                </button>
+              ))
+            : hits.map((ch) => (
+                <button
+                  key={ch}
+                  type="button"
+                  className={ch === kanji && !word ? 'is-on' : ''}
+                  onClick={() => void openKanji(ch)}
+                >
+                  <b className="jp">{ch}</b>
+                  <span>
+                    {meaningLine(dict[ch], 2)} <FreqTag rank={dict[ch].freq} kind="kanji" jlpt={dict[ch].jlpt} />
+                  </span>
+                </button>
+              ))}
+          {kind === 'kanji' && !hits.length ? (
+            <p className="muted">Нет кандзи с этим фильтром. Сними JLPT или введи чтение / значение.</p>
+          ) : null}
+          {kind === 'words' && lexReady && !wordHits.length ? (
+            <p className="muted">
+              {q.trim()
+                ? `Нет слов по запросу «${q.trim()}». Ищи английское значение целиком, чтение каной или ромадзи (mizu, sui).`
+                : 'Нет слов. Переключись на кандзи или ослабь JLPT.'}
+            </p>
+          ) : null}
         </div>
 
         {missing ? (
@@ -297,10 +417,14 @@ export const DictionaryView = forwardRef<DictApi, Props>(function DictionaryView
             </button>
             <p className="word-head">
               <KanjiRun text={word.written} furi={furi} wordReading={word.kana} />
-              <FreqTag rank={wRank} kind={wKind} jlpt={infoOf(dict, uniqueKanji(word.written)[0] || '')?.jlpt} />
+              <FreqTag rank={wRank} kind={wKind} jlpt={wordJlpt(word.written, dict)} common={word.common} />
             </p>
-            <p className="muted">{word.kana}{wFreq ? ` · корпус: ${wFreq}` : ''}</p>
-            <PitchAccent kana={word.kana} />
+            <p className="muted">
+              {word.kana}
+              {word.kana ? ` · ${toRomaji(word.kana)}` : ''}
+              {wFreq ? ` · корпус: ${wFreq}` : ''}
+            </p>
+            <PitchAccent kana={word.kana} patterns={word.pitch} />
             <p className="muted">Слово целиком. Отдельный знак — чип «Кандзи в слове», не клик по иероглифу в заголовке.</p>
             {word.meanings.length ? (
               <ol className="gloss-list">
@@ -362,7 +486,7 @@ export const DictionaryView = forwardRef<DictApi, Props>(function DictionaryView
                   onReading={(r) => {
                     const t = r.replace(/[.\-]/g, '')
                     setQ(t)
-                    const hit = searchDict(dict, t)[0]
+                    const hit = searchKanji(dict, t, 'all', 'freq', 8)[0]
                     if (hit) void openKanji(hit)
                   }}
                 />
@@ -400,23 +524,31 @@ export const DictionaryView = forwardRef<DictApi, Props>(function DictionaryView
                 Нет дерева IDS — только плоский KRADFILE, без вложенности: {tree.rads.join(' ')}
               </p>
             ) : null}
-            <p className="kicker">Слова с этим знаком</p>
-            {words.length ? (
+            <p className="kicker">Слова с этим знаком{words.length ? ` · ${related.length} из ${words.length}` : ''}</p>
+            <DictFilters jlpt={jlpt} onJlpt={setJlpt} sort={sort} onSort={setSort} kind="words" />
+            {related.length ? (
               <ul className="word-rows">
-                {words.slice(0, 24).map((w) => (
+                {related.map((w) => (
                   <li key={w.written + w.kana}>
                     <button type="button" className="word-row" onClick={() => void openWord(w)}>
-                      <KanjiRun text={w.written} furi={furi} wordReading={w.kana} />
+                      <span className="word-row-main">
+                        <KanjiRun text={w.written} furi={furi} wordReading={w.kana} />
+                        <PitchAccent kana={w.kana} patterns={w.pitch} compact />
+                      </span>
                       <span>
                         {w.meanings[0] || w.kana}{' '}
-                        <WordRank written={w.written} alts={w.alts} kana={w.kana} dict={dict} />
+                        <WordRank written={w.written} alts={w.alts} kana={w.kana} dict={dict} common={w.common} />
                       </span>
                     </button>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="muted">Нет сети или слов для этого знака. Используется открытый JMdict (kanjiapi.dev), не база Kanji Study.</p>
+              <p className="muted">
+                {words.length
+                  ? 'Нет слов с этим JLPT. Выбери «все» или другой уровень.'
+                  : 'Нет сети или слов для этого знака. Используется открытый JMdict (kanjiapi.dev), не база Kanji Study.'}
+              </p>
             )}
             <SentList
               sents={sents}
@@ -428,8 +560,10 @@ export const DictionaryView = forwardRef<DictApi, Props>(function DictionaryView
               onKanji={(ch) => void openKanji(ch)}
             />
           </article>
+        ) : kind === 'words' && wordHits.length ? (
+          <p className="muted">Выбери слово слева.</p>
         ) : (
-          <p className="empty">Введи кандзи, слово, кун/он или английское значение.</p>
+          <p className="empty">Введи кандзи, слово, кун/он или английское значение — или выбери уровень JLPT слева.</p>
         )}
       </div>
     </div>

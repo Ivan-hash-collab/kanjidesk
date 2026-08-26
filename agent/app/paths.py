@@ -1,11 +1,12 @@
+import os
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(os.environ["KANJYMEMO_ROOT"]) if os.environ.get("KANJYMEMO_ROOT") else Path(__file__).resolve().parent.parent
 APP_DIR = ROOT / "app"
 CONFIG_DIR = ROOT / "config"
 DATA_DIR = ROOT / "data"
 SEED_DIR = DATA_DIR / "seed"
-USER_DIR = DATA_DIR / "user"
+USER_DIR = Path(os.environ["KANJYMEMO_USER_DIR"]) if os.environ.get("KANJYMEMO_USER_DIR") else (DATA_DIR / "user")
 UI_DIR = APP_DIR / "ui"
 UI_DIST = UI_DIR / "dist"
 
@@ -15,7 +16,12 @@ KKLC_DB = ROOT / "kanji db" / "japanese_kanji.db"
 LLM_CONFIG = CONFIG_DIR / "llm_fallback.yaml"
 PROMPTS_YAML = SEED_DIR / "prompts.yaml"
 SKILLS_DIR = APP_DIR / "agent" / "skills"
-GEMINI_KEY_FILE = ROOT / "gemini_api_key.env"
+if os.environ.get("KANJYMEMO_GEMINI_KEY"):
+    GEMINI_KEY_FILE = Path(os.environ["KANJYMEMO_GEMINI_KEY"])
+elif os.environ.get("KANJYMEMO_USER_DIR"):
+    GEMINI_KEY_FILE = USER_DIR / "gemini_api_key.env"
+else:
+    GEMINI_KEY_FILE = ROOT / "gemini_api_key.env"
 DB_PATH = USER_DIR / "kanjymemo.db"
 
 
