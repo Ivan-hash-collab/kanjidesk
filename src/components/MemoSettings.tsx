@@ -1,5 +1,6 @@
 import { type FormEvent, useEffect, useState } from 'react'
 import { Fold } from './Fold'
+import { GeminiKeyField } from './GeminiKeyField'
 import { memoApi, memoError } from '../lib/memo'
 import { ALL_SKILLS, MNEMONIC_REFS } from '../lib/skills'
 
@@ -70,6 +71,7 @@ export function MemoSettings({ values, onChange, disabled }: Props) {
         Подробность меняет размер пачки и бюджет на знак сразу, даже до сохранения. Сохранение нужно, чтобы те же
         настройки пережили перезапуск.
       </p>
+      <GeminiKeyField />
       <form className="fold-form memo-set" onSubmit={(e) => void onSubmit(e)}>
         <fieldset className="set-sec">
           <legend>Подробность разбора</legend>

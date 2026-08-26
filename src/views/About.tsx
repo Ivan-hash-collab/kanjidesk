@@ -1,4 +1,5 @@
 import { QuizSetup } from '../components/QuizSetup'
+import { GeminiKeyField } from '../components/GeminiKeyField'
 import { ImportNotes } from '../components/ImportNotes'
 import { Tip } from '../components/Tip'
 import { forgetMemoSessions, memoApi } from '../lib/memo'
@@ -59,6 +60,8 @@ export function AboutView({ dict, settings, onSettings, onReset }: Props) {
             />
             Тёмная бумага
           </label>
+          <p className="setup-label">Ключ Gemini</p>
+          <GeminiKeyField />
           <QuizSetup settings={settings} onSettings={onSettings} kind="global" dict={dict} />
           <p className="setup-label">По квизам</p>
           <div className="seg wrap">

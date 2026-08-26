@@ -107,6 +107,10 @@ class SettingsIn(BaseModel):
     values: dict[str, Any]
 
 
+class GeminiKeyIn(BaseModel):
+    key: str
+
+
 @app.on_event("startup")
 def _startup() -> None:
     init_db()
@@ -399,6 +403,30 @@ def api_settings_put(body: SettingsIn) -> dict[str, Any]:
     for k, v in body.values.items():
         set_setting(str(k), str(v))
     return api_settings()
+
+
+@app.get("/api/gemini-key")
+def api_gemini_key() -> dict[str, Any]:
+    from app.agent.router import key_status
+
+    return key_status()
+
+
+@app.put("/api/gemini-key")
+def api_gemini_key_put(body: GeminiKeyIn) -> dict[str, Any]:
+    from app.agent.router import save_api_key
+
+    try:
+        return save_api_key(body.key)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+
+
+@app.delete("/api/gemini-key")
+def api_gemini_key_delete() -> dict[str, Any]:
+    from app.agent.router import clear_api_key
+
+    return clear_api_key()
 
 
 @app.get("/{full_path:path}")

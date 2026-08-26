@@ -10,7 +10,7 @@
 
 Если окно не открылось — поставь [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2) (на Windows 10/11 обычно уже есть).
 
-Мнемоники Gemini: создай файл `%APPDATA%\KanjiDesk\gemini_api_key.env` и вставь ключ с [Google AI Studio](https://aistudio.google.com/apikey). Без ключа словарь и пропись работают как обычно.
+Мнемоники Gemini: в **Настройках** вставь ключ с [Google AI Studio](https://aistudio.google.com/apikey). Без ключа словарь и пропись работают как обычно.
 
 ## Где хранятся данные
 
@@ -47,7 +47,7 @@ SQLite: `agent/data/user/kanjymemo.db`
 
 Там сессии разбора, сгенерированные истории, кэш ответов модели, заметки знаков на стороне агента. Справочник курса — `agent/kanji db/japanese_kanji.db` (его не надо трогать).
 
-Ключ Gemini: **`agent/gemini_api_key.env`** — никому не отправляй и не клади в git.
+Ключ Gemini вставляется в Настройках и пишется в **`gemini_api_key.env`** (`%APPDATA%\KanjiDesk` в exe, рядом с `agent/` при разработке). Никому не отправляй и не клади в git.
 
 ### Логи
 

@@ -1,5 +1,6 @@
 import { useEffect, useReducer, useRef, useState } from 'react'
 import { BackBtn } from './components/BackBtn'
+import { GeminiKeyField } from './components/GeminiKeyField'
 import { HelpBlurb, Sheet } from './components/Sheet'
 import { QuizSetup } from './components/QuizSetup'
 import { Tip } from './components/Tip'
@@ -329,6 +330,10 @@ export default function App() {
                       onChange={(e) => setSettings({ ...settings, dark: e.target.checked })}
                     />
                   </label>
+                </section>
+                <section className="setup-sec">
+                  <p className="setup-label">Ключ Gemini</p>
+                  <GeminiKeyField />
                 </section>
               ) : (
                 <p className="muted">

@@ -191,6 +191,14 @@ export const memoApi = {
   settings: () => req<{ values: Record<string, string> }>('/api/settings'),
   saveSettings: (values: Record<string, string>) =>
     req<{ values: Record<string, string> }>('/api/settings', { method: 'PUT', body: JSON.stringify({ values }) }),
+  geminiKey: () => req<{ configured: boolean; hint: string }>('/api/gemini-key'),
+  saveGeminiKey: (key: string) =>
+    req<{ configured: boolean; hint: string }>('/api/gemini-key', {
+      method: 'PUT',
+      body: JSON.stringify({ key }),
+    }),
+  clearGeminiKey: () =>
+    req<{ configured: boolean; hint: string }>('/api/gemini-key', { method: 'DELETE' }),
   tokenize: (text: string) =>
     req<{
       engine: string

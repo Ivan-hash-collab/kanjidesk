@@ -34,3 +34,35 @@ def test_health_and_delete_contract(initialized_db):
         assert notes.json()["ok"] is True
         got = client.get("/api/kanji/火/notes")
         assert got.json()["mnemonic"] == "user"
+
+
+def test_gemini_key_roundtrip(initialized_db, tmp_path, monkeypatch):
+    from app.agent import router
+
+    path = tmp_path / "gemini_api_key.env"
+    monkeypatch.setattr(router, "GEMINI_KEY_FILE", path)
+    router.reset_client()
+
+    with TestClient(app) as client:
+        empty = client.get("/api/gemini-key")
+        assert empty.status_code == 200
+        assert empty.json() == {"configured": False, "hint": ""}
+
+        bad = client.put("/api/gemini-key", json={"key": "short"})
+        assert bad.status_code == 400
+
+        raw = "AIzaSyFakeKeyForTests3456"
+        saved = client.put("/api/gemini-key", json={"key": f"GEMINI_API_KEY={raw}"})
+        assert saved.status_code == 200
+        body = saved.json()
+        assert body["configured"] is True
+        assert body["hint"] == "…3456"
+        assert raw not in body["hint"]
+        stored = path.read_text(encoding="utf-8")
+        assert stored.startswith("GEMINI_API_KEY=")
+        assert raw in stored
+
+        gone = client.delete("/api/gemini-key")
+        assert gone.status_code == 200
+        assert gone.json()["configured"] is False
+        assert not path.exists()

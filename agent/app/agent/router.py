@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 from datetime import datetime, timezone
 from typing import Any
@@ -13,18 +14,62 @@ from app.paths import GEMINI_KEY_FILE
 _client = None
 
 
-def _api_key() -> str | None:
-    if not GEMINI_KEY_FILE.exists():
-        return None
-    text = GEMINI_KEY_FILE.read_text(encoding="utf-8").strip()
+def _parse_key_text(text: str) -> str | None:
     for line in text.splitlines():
         line = line.strip()
         if not line or line.startswith("#"):
             continue
         if "=" in line:
-            return line.split("=", 1)[1].strip().strip('"')
-        return line
+            return line.split("=", 1)[1].strip().strip('"').strip("'")
+        return line.strip('"').strip("'")
     return None
+
+
+def _api_key() -> str | None:
+    if not GEMINI_KEY_FILE.exists():
+        return None
+    return _parse_key_text(GEMINI_KEY_FILE.read_text(encoding="utf-8"))
+
+
+def normalize_api_key(raw: str) -> str:
+    text = raw.strip().replace("\r", "")
+    parsed = _parse_key_text(text)
+    key = (parsed if parsed is not None else text).strip().strip('"').strip("'")
+    if not key or any(c.isspace() for c in key) or len(key) < 16:
+        raise ValueError("Вставь ключ целиком — без пробелов и переносов")
+    return key
+
+
+def key_status() -> dict[str, Any]:
+    key = _api_key()
+    if not key:
+        return {"configured": False, "hint": ""}
+    tail = key[-4:] if len(key) >= 4 else key
+    return {"configured": True, "hint": f"…{tail}"}
+
+
+def reset_client() -> None:
+    global _client
+    _client = None
+
+
+def save_api_key(raw: str) -> dict[str, Any]:
+    key = normalize_api_key(raw)
+    GEMINI_KEY_FILE.parent.mkdir(parents=True, exist_ok=True)
+    GEMINI_KEY_FILE.write_text(f"GEMINI_API_KEY={key}\n", encoding="utf-8")
+    try:
+        os.chmod(GEMINI_KEY_FILE, 0o600)
+    except OSError:
+        pass
+    reset_client()
+    return key_status()
+
+
+def clear_api_key() -> dict[str, Any]:
+    if GEMINI_KEY_FILE.exists():
+        GEMINI_KEY_FILE.unlink()
+    reset_client()
+    return key_status()
 
 
 def get_client():

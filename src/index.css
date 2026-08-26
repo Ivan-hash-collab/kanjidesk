@@ -923,6 +923,46 @@ ruby.is-session { box-shadow: inset 0 -3px 0 var(--seal); }
 .pref.range-pref { grid-template-columns: 1fr; }
 .pref.range-pref input[type='range'] { width: 100%; }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.api-key-field {
+  display: grid;
+  gap: 8px;
+}
+.api-key-status { margin: 0; font-size: 13px; }
+.api-key-hint {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+.api-key-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+.api-key-row .field {
+  flex: 1;
+  min-width: 0;
+  letter-spacing: 0.04em;
+}
+.api-key-row .field:focus-visible,
+.api-key-field .btn:focus-visible {
+  outline: 2px solid var(--seal);
+  outline-offset: 2px;
+}
+.api-key-field .btn:hover:not(:disabled) { border-color: var(--seal); }
+.api-key-field .btn:active:not(:disabled) { transform: scale(0.98); }
+.api-key-field a { color: var(--seal); }
+.api-key-field a:hover { text-decoration: underline; }
+
 .cfg-summary { font-size: 12px; color: var(--muted); line-height: 1.3; margin: 0 0 4px; }
 .cfg-line {
   display: flex;
