@@ -60,8 +60,7 @@ export function GeminiKeyField() {
     return (
       <div className="api-key-field">
         <p className="muted">
-          Поле ключа откроется, когда агент запущен. В готовом приложении это KanjiDesk.exe; при разработке —{' '}
-          <code>launch.py</code>.
+          Поле ключа появится, когда KanjiDesk открыт целиком (ярлык «отладка» или exe). Сейчас помощник мнемоник не запущен — вставлять ключ некуда.
         </p>
       </div>
     )

@@ -234,7 +234,7 @@ export function MemoWorkbench({ sid, sess, onReload, onChangeSet }: Props) {
         }
         if (r._error && !(r.text_ru || '').trim()) setErr(r._error)
         if (rewrite && r._cached) {
-          setErr('Агент вернул старый кэш. Закрой KanjiDesk и открой через launch.py.')
+          setErr('Агент вернул старый кэш. Закрой KanjiDesk и открой снова.')
         }
         prior = [prior, r.text_ru].filter(Boolean).join('\n\n')
         await onReload()

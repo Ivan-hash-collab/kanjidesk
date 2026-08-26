@@ -106,6 +106,7 @@ input[type='range'] { accent-color: var(--seal); }
   font-size: 20px;
 }
 .brand small { display: block; color: var(--muted); font-size: 11px; }
+.brand.is-debug small { color: var(--seal); }
 .nav nav { display: flex; flex-direction: column; gap: 2px; }
 .nav nav button {
   text-align: left;

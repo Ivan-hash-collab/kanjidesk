@@ -350,7 +350,7 @@ export async function pingMemo(): Promise<boolean> {
 export function memoError(e: unknown): string {
   const raw = e instanceof Error ? e.message : String(e)
   if (/down|Failed to fetch|NetworkError|502|Load failed/i.test(raw)) {
-    return 'Агент не отвечает. Закрой KanjiDesk и открой снова через launch.py.'
+    return 'Агент не отвечает. Закрой KanjiDesk и открой снова.'
   }
   return raw
 }

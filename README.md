@@ -8,6 +8,19 @@
 2. Запусти. Больше ничего ставить не нужно — ни Python, ни Node.js.
 3. Закрой окно KanjiDesk, когда закончишь. Списки и прогресс живут в `%APPDATA%\KanjiDesk`.
 
+## Тебе: отладка, не exe
+
+Это **две разные программы**. Не путай ярлык на рабочем столе с файлом с GitHub.
+
+| | Отладка (ты) | Релиз (другу) |
+|---|---|---|
+| Запуск | ярлык **KanjiDesk (отладка)** или `start.bat` | `KanjiDesk.exe` из Releases |
+| Окно | заголовок «KanjiDesk · отладка», слева подпись «отладка» | просто «KanjiDesk» |
+| Код | `%APPDATA%\Anki2\KanjiDesk` | внутри exe |
+| Данные | `chrome-profile` и ключ рядом с `start.bat` | `%APPDATA%\KanjiDesk` |
+
+После новой сборки exe отладка и релиз могут быть открыты вместе. Старый `KanjiDesk.exe` с GitHub ещё сидит на порту отладки: если он запущен, `start.bat` предупредит и не подсядет в его окно.
+
 Если окно не открылось — поставь [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2) (на Windows 10/11 обычно уже есть).
 
 Мнемоники Gemini: в **Настройках** вставь ключ с [Google AI Studio](https://aistudio.google.com/apikey). Без ключа словарь и пропись работают как обычно.

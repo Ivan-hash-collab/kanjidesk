@@ -9,12 +9,14 @@ New-Item -ItemType Directory -Force -Path $programs | Out-Null
 
 $shell = New-Object -ComObject WScript.Shell
 foreach ($dir in @($desktop, $programs)) {
-  $lnk = Join-Path $dir "KanjiDesk.lnk"
+  $old = Join-Path $dir "KanjiDesk.lnk"
+  if (Test-Path -LiteralPath $old) { Remove-Item -LiteralPath $old -Force }
+  $lnk = Join-Path $dir "KanjiDesk (отладка).lnk"
   $s = $shell.CreateShortcut($lnk)
   $s.TargetPath = $bat
   $s.WorkingDirectory = $root
   $s.WindowStyle = 1
-  $s.Description = "KanjiDesk — пропись кандзи на ПК"
+  $s.Description = "Отладочная сборка KanjiDesk (start.bat). Не GitHub exe."
   if (Test-Path $ico) { $s.IconLocation = "$ico,0" }
   $s.Save()
   Write-Output $lnk

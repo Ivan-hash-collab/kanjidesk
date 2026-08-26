@@ -14,6 +14,12 @@ function sessionPlugin(): Plugin {
     next: () => void,
   ) => {
     const url = req.url?.split('?')[0]
+    if (url === '/app-mode.json') {
+      res.setHeader('Content-Type', 'application/json; charset=utf-8')
+      res.setHeader('Cache-Control', 'no-store')
+      res.end(JSON.stringify({ debug: true, channel: 'vite', label: 'отладка' }))
+      return
+    }
     if (url !== '/session.json') {
       next()
       return

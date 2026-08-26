@@ -66,3 +66,15 @@ def test_gemini_key_roundtrip(initialized_db, tmp_path, monkeypatch):
         assert gone.status_code == 200
         assert gone.json()["configured"] is False
         assert not path.exists()
+
+
+def test_session_works_without_kklc_db(initialized_db, tmp_path, monkeypatch):
+    from app.core import ref_catalog
+
+    monkeypatch.setattr(ref_catalog, "KKLC_DB", tmp_path / "missing.db")
+    with TestClient(app) as client:
+        res = client.post("/api/sessions", json={"text": "火水", "title": "no-kklc"})
+        assert res.status_code == 200
+        body = res.json()
+        assert body["count"] == 2
+        assert body["kanji"][0]["kanji"] == "火"

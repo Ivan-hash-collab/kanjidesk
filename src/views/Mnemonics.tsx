@@ -67,7 +67,7 @@ export function MnemonicsView({
           не по одному.
         </p>
         {ok === false ? (
-          <p className="status-bad">Агент не запущен. Открой KanjiDesk через launch.py.</p>
+          <p className="status-bad">Агент не запущен. Закрой KanjiDesk и открой снова.</p>
         ) : null}
         <div className="mode-list">
           <button type="button" className="mode-row is-plain" disabled={!chars.length} onClick={onOpenSet}>
@@ -200,7 +200,7 @@ export function MnemonicsView({
       {ok === false ? (
         <div className="card">
           <p>Агент не запущен.</p>
-          <p className="muted">Закрой окно и открой KanjiDesk через launch.py.</p>
+          <p className="muted">Закрой окно и открой KanjiDesk снова.</p>
           <button type="button" className="btn primary" onClick={() => void pingMemo().then(setOk)}>
             Проверить снова
           </button>

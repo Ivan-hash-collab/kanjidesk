@@ -51,5 +51,5 @@ it('saves a pasted Gemini key', async () => {
 it('shows a fallback when the agent is down', async () => {
   stubKeyApi({ failGet: true })
   render(<GeminiKeyField />)
-  expect(await screen.findByText(/Поле ключа откроется/)).toBeInTheDocument()
+  expect(await screen.findByText(/Поле ключа появится/)).toBeInTheDocument()
 })

@@ -35,9 +35,12 @@ USER = user_dir()
 DIST = ROOT / "dist"
 SESSION = USER / "session.json"
 PROFILE = USER / "chrome-profile"
-PORT = 8765
+# Exe uses another port so start.bat and GitHub-сборка не садятся в одно окно.
+PORT = 18765 if frozen() else 8765
+MEMO_PORT = 15280 if frozen() else 5280
+CHANNEL = "exe" if frozen() else "local"
+WINDOW_TITLE = "KanjiDesk" if frozen() else "KanjiDesk · отладка"
 URL = f"http://127.0.0.1:{PORT}/"
-MEMO_PORT = 5280
 LOG_DIR = USER / "logs"
 EXPECTED_MEMO_VERSION = "0.3.3"
 MEMO_CANDIDATES = [
@@ -64,6 +67,22 @@ class Handler(SimpleHTTPRequestHandler):
         if self._is_memo():
             return self._proxy_memo()
         path = self.path.split("?", 1)[0]
+        if path == "/app-mode.json":
+            payload = json.dumps(
+                {
+                    "debug": not frozen(),
+                    "channel": CHANNEL,
+                    "label": "релиз" if frozen() else "отладка",
+                },
+                ensure_ascii=False,
+            ).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Content-Length", str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
+            return
         if path == "/session.json" and SESSION.exists():
             data = SESSION.read_bytes()
             self.send_response(200)
@@ -144,7 +163,7 @@ class Handler(SimpleHTTPRequestHandler):
 
 
 class Server(ThreadingHTTPServer):
-    # On Windows SO_REUSEADDR lets several processes bind :8765. Chrome then
+    # On Windows SO_REUSEADDR lets several processes bind the same port. Chrome then
     # hits a dead listener and shows ERR_EMPTY_RESPONSE.
     allow_reuse_address = False
 
@@ -264,11 +283,11 @@ def start_memo() -> None:
     info = memo_health()
     ver = str((info or {}).get("version") or "")
     if info and ver == EXPECTED_MEMO_VERSION and info.get("status") in {"ok", "degraded"}:
-        print(f"KanjyMemo уже на :5280 · v{ver} · schema {info.get('schema')}", flush=True)
+        print(f"KanjyMemo уже на :{MEMO_PORT} · v{ver} · schema {info.get('schema')}", flush=True)
         return
     if info:
         print(
-            f"KanjyMemo на :5280 устарел (v{ver or '?'}). Перезапускаю {EXPECTED_MEMO_VERSION}…",
+            f"KanjyMemo на :{MEMO_PORT} устарел (v{ver or '?'}). Перезапускаю {EXPECTED_MEMO_VERSION}…",
             flush=True,
         )
         stop_stale_servers(MEMO_PORT)
@@ -331,6 +350,47 @@ def health_ok() -> bool:
             return getattr(r, "status", 200) == 200 and b"KanjiDesk" in body
     except Exception:
         return False
+
+
+def peer_channel() -> str | None:
+    try:
+        import urllib.request
+
+        req = urllib.request.Request(f"{URL}app-mode.json", headers={"Cache-Control": "no-cache"})
+        with _opener().open(req, timeout=1.0) as r:
+            data = json.loads(r.read().decode("utf-8"))
+        ch = data.get("channel")
+        return ch if ch in {"exe", "local"} else None
+    except Exception:
+        return None
+
+
+def image_for_pid(pid: int) -> str:
+    try:
+        out = subprocess.check_output(
+            ["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"],
+            text=True,
+            errors="replace",
+        )
+    except OSError:
+        return ""
+    line = (out.strip().splitlines() or [""])[0]
+    if line.startswith('"'):
+        return line.split('","', 1)[0].strip('"').lower()
+    return line.split()[0].lower() if line else ""
+
+
+def occupant_channel(port: int) -> str | None:
+    peer = peer_channel()
+    if peer:
+        return peer
+    for pid in pids_listening(port):
+        name = image_for_pid(pid)
+        if name == "kanjidesk.exe":
+            return "exe"
+        if name in {"python.exe", "pythonw.exe", "py.exe"}:
+            return "local"
+    return None
 
 
 def pids_listening(port: int) -> list[int]:
@@ -410,7 +470,7 @@ def open_webview() -> bool:
     try:
         import webview
 
-        webview.create_window("KanjiDesk", URL, width=1440, height=900, min_size=(800, 560))
+        webview.create_window(WINDOW_TITLE, URL, width=1440, height=900, min_size=(800, 560))
         webview.start()
         return True
     except Exception as e:
@@ -456,6 +516,14 @@ def main() -> int:
         return 1
 
     if port_in_use(PORT):
+        other = occupant_channel(PORT)
+        if other and other != CHANNEL:
+            label = "GitHub exe" if other == "exe" else "отладка (start.bat)"
+            _alert(
+                WINDOW_TITLE,
+                f"Уже запущена другая копия: {label}.\nЗакрой её и открой нужную ещё раз.",
+            )
+            return 1
         if health_ok():
             print("Сервер уже работает. Открываю окно…", flush=True)
             if frozen() and open_webview():
@@ -463,7 +531,7 @@ def main() -> int:
             open_window()
             time.sleep(1.2)
             return 0
-        print("Порт :8765 занят, страница не открывается — перезапускаю сервер.", flush=True)
+        print(f"Порт :{PORT} занят, страница не открывается — перезапускаю сервер.", flush=True)
         stop_stale_servers(PORT)
 
     try:
@@ -483,7 +551,7 @@ def main() -> int:
         if port_in_use(PORT):
             print("Проверка HTTP не прошла, порт жив — открываю окно.", flush=True)
         else:
-            _alert("KanjiDesk", "Интерфейс не ответил на :8765")
+            _alert(WINDOW_TITLE, f"Интерфейс не ответил на :{PORT}")
             server.shutdown()
             return 1
     print(f"KanjiDesk: {URL}", flush=True)

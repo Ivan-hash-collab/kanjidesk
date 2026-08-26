@@ -11,9 +11,9 @@ from app.core.user_notes import get_user_note, save_user_note
 from app.paths import KKLC_DB, SEED_DIR
 
 
-def _ref() -> sqlite3.Connection:
+def _ref() -> sqlite3.Connection | None:
     if not KKLC_DB.exists():
-        raise FileNotFoundError(f"нет справочника: {KKLC_DB}")
+        return None
     conn = sqlite3.connect(str(KKLC_DB))
     conn.row_factory = sqlite3.Row
     return conn
@@ -21,6 +21,8 @@ def _ref() -> sqlite3.Connection:
 
 def lookup(kanji: str) -> dict[str, Any] | None:
     conn = _ref()
+    if conn is None:
+        return None
     try:
         row = conn.execute("SELECT * FROM kklc_kanji WHERE kanji = ?", (kanji,)).fetchone()
         if row is None:
@@ -33,6 +35,8 @@ def lookup(kanji: str) -> dict[str, Any] | None:
 def search(query: str, limit: int = 40) -> list[dict[str, Any]]:
     q = f"%{query.strip()}%"
     conn = _ref()
+    if conn is None:
+        return []
     try:
         rows = conn.execute(
             """

@@ -12,6 +12,7 @@ import { MnemonicsView } from './views/Mnemonics'
 import { StudyView, type StudyApi } from './views/Study'
 import { loadDict, uniqueKanji } from './lib/kanji'
 import { initialNav, navReducer } from './lib/appNav'
+import { fallbackChannel, loadAppChannel, windowTitleFor } from './lib/appMode'
 import { preloadStrokes } from './lib/strokes'
 import { defaultSettings, factoryReset, isQuizId, loadLastSession, loadSettings, loadStats, saveLastSession, saveSettings } from './lib/storage'
 import { clearAllNotes } from './lib/notesRepo'
@@ -39,10 +40,19 @@ export default function App() {
   const [studyInner, setStudyInner] = useState(false)
   const [studyMode, setStudyMode] = useState<StudyMode>('hub')
   const [dictDepth, setDictDepth] = useState(0)
+  const [channel, setChannel] = useState(fallbackChannel)
   const studyRef = useRef<StudyApi>(null)
   const dictRef = useRef<DictApi>(null)
 
   const { view, session, title, sheet, pending, memoOpen, dictFocus, dictWord, dictQuery, settingsKind, trail } = nav
+
+  useEffect(() => {
+    void loadAppChannel().then((next) => {
+      setChannel(next)
+      document.title = windowTitleFor(next)
+      document.documentElement.classList.toggle('is-debug', next.debug)
+    })
+  }, [])
 
   useEffect(() => {
     loadDict()
@@ -179,11 +189,11 @@ export default function App() {
   return (
     <div className={`shell ${sheet ? 'is-sheet' : ''}`}>
       <aside className="nav">
-        <div className="brand">
+        <div className={`brand ${channel.debug ? 'is-debug' : ''}`}>
           <span>墨</span>
           <div>
             <strong>KanjiDesk</strong>
-            <small>пропись на ПК</small>
+            <small>{channel.debug ? 'отладка · start.bat' : 'пропись на ПК'}</small>
           </div>
         </div>
         <nav>

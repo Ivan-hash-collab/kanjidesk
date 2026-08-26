@@ -1,7 +1,7 @@
 @echo off
 setlocal EnableExtensions
 cd /d "%~dp0"
-title KanjiDesk
+title KanjiDesk отладка
 
 if exist "dist\index.html" goto run
 
