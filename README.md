@@ -4,7 +4,7 @@
 
 ## Друзьям: один файл
 
-1. Открой [Releases](https://github.com/SenkuraDeveloper/kanjidesk/releases) и скачай **KanjiDesk.exe**.
+1. Открой [Releases](https://github.com/Ivan-hash-collab/kanjidesk/releases) и скачай **KanjiDesk.exe**.
 2. Запусти. Больше ничего ставить не нужно — ни Python, ни Node.js.
 3. Закрой окно KanjiDesk, когда закончишь. Списки и прогресс живут в `%APPDATA%\KanjiDesk`.
 
