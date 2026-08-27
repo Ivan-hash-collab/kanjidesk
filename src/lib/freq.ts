@@ -1,5 +1,4 @@
 import { loadJson } from './gzipJson'
-import { loadDict } from './kanji'
 
 export type WordFreq = { w: string; n: number; r: number }
 export type KanjiFreq = { ch: string; r: number; jlpt: number | null; strokes: number | null }
@@ -42,10 +41,9 @@ export async function preloadFreq() {
   await Promise.all([ensureWords(), ensureKanji()])
 }
 
-export function freqOfWordSync(
-  written: string,
-  extra: Iterable<string> = [],
-): { r: number; n?: number; kind: 'word' | 'kanji' } | null {
+export type WordFreqHit = { r: number; n?: number; kind: 'word' } | null
+
+export function freqOfWordSync(written: string, extra: Iterable<string> = []): WordFreqHit {
   if (!wordMap) return null
   const seen = new Set<string>()
   for (const k of [written, ...extra]) {
@@ -54,18 +52,10 @@ export function freqOfWordSync(
     const f = wordMap.get(k)
     if (f) return { r: f.r, n: f.n, kind: 'word' }
   }
-  const chars = [...written].filter((c) => CJK.test(c))
-  if (chars.length === 1 && kanjiMap) {
-    const kf = kanjiMap.get(chars[0])
-    if (kf) return { r: kf.r, kind: 'kanji' }
-  }
   return null
 }
 
-export async function freqOfWord(
-  written: string,
-  extra: Iterable<string> = [],
-): Promise<{ r: number; n?: number; kind: 'word' | 'kanji' } | null> {
+export async function freqOfWord(written: string, extra: Iterable<string> = []): Promise<WordFreqHit> {
   await ensureWords()
   const seen = new Set<string>()
   for (const k of [written, ...extra]) {
@@ -73,15 +63,6 @@ export async function freqOfWord(
     seen.add(k)
     const f = wordMap?.get(k)
     if (f) return { r: f.r, n: f.n, kind: 'word' }
-  }
-  const chars = [...written].filter((c) => CJK.test(c))
-  if (chars.length === 1) {
-    await ensureKanji()
-    const kf = kanjiMap?.get(chars[0])
-    if (kf) return { r: kf.r, kind: 'kanji' }
-    const dict = await loadDict().catch(() => null)
-    const r = dict?.[chars[0]]?.freq
-    if (r) return { r, kind: 'kanji' }
   }
   return null
 }

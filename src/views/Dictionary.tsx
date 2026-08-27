@@ -209,7 +209,7 @@ export const DictionaryView = forwardRef<DictApi, Props>(function DictionaryView
     }
     void freqOfWord(word.written, [...(word.alts ?? []), word.kana]).then((f) => {
       setWRank(f?.r ?? null)
-      setWKind(f?.kind ?? 'word')
+      setWKind('word')
       setWFreq(f?.n != null ? `${f.n.toLocaleString('ru-RU')} в корпусе` : '')
     })
   }, [word])
@@ -425,7 +425,11 @@ export const DictionaryView = forwardRef<DictApi, Props>(function DictionaryView
               {wFreq ? ` · корпус: ${wFreq}` : ''}
             </p>
             <PitchAccent kana={word.kana} patterns={word.pitch} />
-            <p className="muted">Слово целиком. Отдельный знак — чип «Кандзи в слове», не клик по иероглифу в заголовке.</p>
+            {word.alts?.length ? (
+              <p className="muted">
+                Другие написания: {word.alts.join('、')}
+              </p>
+            ) : null}
             {word.meanings.length ? (
               <ol className="gloss-list">
                 {word.meanings.map((g) => (

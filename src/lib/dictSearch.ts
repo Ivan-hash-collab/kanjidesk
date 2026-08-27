@@ -102,11 +102,19 @@ export function matchJlpt(level: number | null | undefined, filter: JlptFilter):
   return level === filter
 }
 
-/** JLPT of a word: only a single-kanji lemma. Compounds do not inherit N4 from 肉, etc. */
+/**
+ * Single, consistent JLPT for a whole word so the same word doesn't pop up as
+ * N1 in one list and N5 in another. Take the hardest (lowest) kanji level:
+ * 関係 → 関(N2) + 係(N2) → N2. Words with no kanji level are left untagged.
+ */
 export function wordJlpt(written: string, dict: KanjiDict): number | null {
   const chars = uniqueKanji(written)
-  if (chars.length !== 1) return null
-  return dict[chars[0]]?.jlpt ?? null
+  if (!chars.length) return null
+  const levels = chars
+    .map((ch) => dict[ch]?.jlpt)
+    .filter((n): n is number => n != null && n >= 1 && n <= 5)
+  if (!levels.length) return null
+  return Math.min(...levels)
 }
 
 function escapeRe(s: string): string {

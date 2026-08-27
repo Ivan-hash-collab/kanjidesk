@@ -16,12 +16,12 @@ export function FreqTag({ rank, kind, jlpt, corpusN, common }: Props) {
   const bits: string[] = []
   if (jlpt) bits.push(jlptLabel(jlpt))
   if (common && kind === 'word') bits.push('частотное')
-  if (rank && rank > 0) {
+  if (rank && rank > 0 && kind === 'word') {
     const hint = rank <= 500 ? 'очень частое' : rank <= 1500 ? 'частое' : rank <= 5000 ? 'среднее' : 'редкое'
-    bits.push(kind === 'kanji' ? `кандзи #${rank}` : `корпус #${rank}`)
-    if (corpusN != null && kind === 'word') bits.push(`${corpusN.toLocaleString('ru-RU')} вхожд.`)
+    bits.push(`корпус #${rank}`)
+    if (corpusN != null) bits.push(`${corpusN.toLocaleString('ru-RU')} вхожд.`)
     return (
-      <span className="freq-tag" title={`${hint}${jlpt ? ` · ${jlptLabel(jlpt)}` : ''}${common ? ' · JMdict common' : ''} · ${kind === 'word' ? 'корпус, не JLPT' : 'частотный список кандзи'}`}>
+      <span className="freq-tag" title={`${hint}${jlpt ? ` · ${jlptLabel(jlpt)}` : ''}${common ? ' · JMdict common' : ''} · корпус слов (OpenSubtitles), не JLPT`}>
         {bits.join(' · ')}
       </span>
     )

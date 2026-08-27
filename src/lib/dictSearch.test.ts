@@ -18,11 +18,12 @@ describe('dict search filters', () => {
     expect(matchJlpt(5, 'none')).toBe(false)
   })
 
-  it('does not treat a compound as JLPT of its kanji', () => {
+  it('assigns a single consistent JLPT to a whole word', () => {
     expect(wordJlpt('水', dict)).toBe(5)
-    expect(wordJlpt('水火', dict)).toBeNull()
-    expect(wordJlpt('漢水', dict)).toBeNull()
+    expect(wordJlpt('水火', dict)).toBe(5)
+    expect(wordJlpt('漢水', dict)).toBe(1)
     expect(wordJlpt('字', dict)).toBeNull()
+    expect(wordJlpt('関係', { 関: { strokes: 12, grade: 8, freq: 400, jlpt: 2, meanings: [], on: [], kun: [] }, 係: { strokes: 9, grade: 8, freq: 500, jlpt: 2, meanings: [], on: [], kun: [] } })).toBe(2)
   })
 
   it('finds kanji by reading and meaning and can browse by JLPT', () => {
@@ -88,13 +89,14 @@ describe('dict search filters', () => {
     expect(searchKanji(withEye, 'eye -roma', 'all', 'freq')).toContain('目')
   })
 
-  it('merges variant writings and does not tag compounds as kanji JLPT', () => {
+  it('merges variant writings and tags compounds with their hardest kanji JLPT', () => {
     const meat: KanjiDict = {
       ...dict,
       肉: { strokes: 6, grade: 2, freq: 300, jlpt: 4, meanings: ['meat'], on: ['ニク'], kun: [] },
+      壺: { strokes: 12, grade: 8, freq: 900, jlpt: null, meanings: ['jug'], on: [], kun: [] },
     }
     expect(wordJlpt('肉', meat)).toBe(4)
-    expect(wordJlpt('肉壺', meat)).toBeNull()
+    expect(wordJlpt('肉壺', meat)).toBe(4)
     const words = [
       { written: '膣肉', kana: 'ちつにく', meanings: ['vulva'], common: false },
       { written: '膣肉', kana: 'ちつにく', meanings: ['vulva'], common: false },
@@ -103,7 +105,8 @@ describe('dict search filters', () => {
       { written: '淫口', kana: 'いんこう', meanings: ['pussy'], common: false },
     ]
     expect(filterWords(words, 'vulva', meat, 'all', 'freq').map((w) => w.written)).toEqual(['膣肉'])
+    // 肉壺 = 肉(N4)+壺(нет) → слово N4, поэтому попадает в фильтр N4.
     expect(filterWords(words, 'pussy', meat, 'all', 'freq').map((w) => w.written)).toEqual(['肉壺', '淫口'])
-    expect(filterWords(words, 'pussy', meat, 4, 'freq')).toEqual([])
+    expect(filterWords(words, 'pussy', meat, 4, 'freq').map((w) => w.written)).toEqual(['肉壺'])
   })
 })

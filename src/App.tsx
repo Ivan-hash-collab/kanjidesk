@@ -41,6 +41,7 @@ export default function App() {
   const [studyMode, setStudyMode] = useState<StudyMode>('hub')
   const [dictDepth, setDictDepth] = useState(0)
   const [channel, setChannel] = useState(fallbackChannel)
+  const [studyOrigin, setStudyOrigin] = useState<ViewId | 'hub' | 'setup'>('hub')
   const studyRef = useRef<StudyApi>(null)
   const dictRef = useRef<DictApi>(null)
 
@@ -66,12 +67,13 @@ export default function App() {
     saveSettings(settings)
   }, [settings])
 
-  function start(chars: string[], name: string, next?: { mode: StudyMode; autoStart?: boolean }) {
+  function start(chars: string[], name: string, next?: { mode?: StudyMode; autoStart?: boolean; origin?: ViewId | 'hub' | 'setup' }) {
     const nextIntent: StudyIntent = {
       nonce: Date.now(),
       mode: next?.mode ?? 'hub',
       autoStart: next?.autoStart ?? false,
     }
+    setStudyOrigin(next?.origin ?? 'hub')
     if (busy.active) {
       dispatch({ type: 'start', chars, title: name, intent: nextIntent, busy: true })
       return
@@ -105,6 +107,14 @@ export default function App() {
     if (view === 'dict' && dictRef.current?.back()) return
     if (view === 'study') {
       if (studyRef.current?.stepBack()) return
+      if (studyOrigin === 'dict') {
+        requestView('dict')
+        return
+      }
+      if (studyOrigin === 'lists') {
+        requestView('lists')
+        return
+      }
       if (busy.active) {
         dispatch({ type: 'sheet', tab: 'leave' })
         return
@@ -276,7 +286,7 @@ export default function App() {
             dict={dict}
             session={session}
             sessionTitle={title}
-            onOpen={(chars, name) => start(chars, name)}
+            onOpen={(chars, name) => start(chars, name, { origin: 'lists' })}
             onMemo={openMemo}
           />
         ) : null}
@@ -303,7 +313,7 @@ export default function App() {
             focus={dictFocus}
             focusWord={dictWord}
             focusQuery={dictQuery}
-            onStudy={(chars, name) => start(chars, name || chars.join(''), { mode: 'draw', autoStart: true })}
+            onStudy={(chars, name) => start(chars, name || chars.join(''), { mode: 'draw', autoStart: true, origin: 'dict' })}
             onDepth={setDictDepth}
           />
         ) : null}
