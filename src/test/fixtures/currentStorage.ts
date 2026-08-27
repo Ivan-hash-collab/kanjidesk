@@ -3,7 +3,7 @@ import { CURRENT_STORAGE_VERSION } from '../../lib/storageMigrations'
 import { STORAGE_KEYS } from '../../lib/storageKeys'
 
 export function currentStorageFixture(today: string) {
-  const practiceQuiz = {
+  const practiceQuiz: Settings['quiz']['practice'] = {
     autoNext: false,
     repeatWrong: true,
     hideAnswers: true,
@@ -17,8 +17,11 @@ export function currentStorageFixture(today: string) {
     showOutline: true,
     penWidth: 16,
     passQuality: 70,
+    speech: true,
+    showKanji: 'glyph',
   }
 
+  const { speech: _pSpeech, ...practiceFlat } = practiceQuiz
   const settings: Settings = {
     dark: true,
     speech: false,
@@ -43,7 +46,8 @@ export function currentStorageFixture(today: string) {
         strictness: 45,
       },
     },
-    ...practiceQuiz,
+    ...practiceFlat,
+    showKanji: 'glyph',
   }
 
   const stats: Stats = {

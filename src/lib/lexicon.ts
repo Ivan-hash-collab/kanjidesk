@@ -457,6 +457,10 @@ export async function findWord(written: string): Promise<LexWord | null> {
   return null
 }
 
+function toHiraLocal(s: string): string {
+  return s.replace(/[\u30a1-\u30f6]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0x60))
+}
+
 export function wordsForReading(
   words: LexWord[],
   ch: string,
@@ -476,7 +480,13 @@ export function wordsForReading(
   const exact: LexWord[] = []
   const stem: LexWord[] = []
   const seen = new Set<string>()
+  const rd = normRead(reading)
   for (const w of bag) {
+    // For a single-kanji reading (on or kun), only accept words whose kana
+    // actually begins with that reading, so an on-reading never pulls in a
+    // kun-reading word.
+    const hira = normRead(toHiraLocal(w.kana))
+    if (rd && hira && !hira.startsWith(rd)) continue
     const kind = matchWordToKun(w.written, w.kana, ch, reading, dict)
     if (!kind) continue
     const id = `${w.written}|${w.kana}`

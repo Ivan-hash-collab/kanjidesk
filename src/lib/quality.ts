@@ -162,7 +162,7 @@ export function settingsSummary(s: Settings, writing: boolean, mode?: string): s
   if (q.hypermode) bits.push('hypermode')
   bits.push(q.autoNext ? 'авто дальше' : 'ручной переход')
   if (q.repeatWrong) bits.push('повтор ошибок')
-  if (s.speech) bits.push('озвучка')
+  if (q.speech) bits.push('озвучка')
   if (q.hideAnswers) bits.push('скрыть ответы')
   if (q.disableTimeouts) bits.push('без таймера')
   if (writing) {

@@ -55,6 +55,7 @@ export const Writer = forwardRef<WriterHandle, Props>(function Writer(
   const writerRef = useRef<HanziWriter | null>(null)
   const completeRef = useRef(onComplete)
   const liveRef = useRef(onLive)
+  const statsRef = useRef({ totalMistakes: 0, backwards: 0, hintedStrokes: 0, stroke: 0 })
   completeRef.current = onComplete
   liveRef.current = onLive
   const [error, setError] = useState(false)
@@ -62,6 +63,9 @@ export const Writer = forwardRef<WriterHandle, Props>(function Writer(
 
   useImperativeHandle(ref, () => ({
     hint() {
+      const s = statsRef.current
+      s.hintedStrokes += 1
+      liveRef.current?.({ mistakes: s.totalMistakes, backwards: s.backwards, stroke: s.stroke, hinted: s.hintedStrokes })
       try {
         writerRef.current?.skipQuizStroke()
       } catch {
@@ -91,9 +95,13 @@ export const Writer = forwardRef<WriterHandle, Props>(function Writer(
     let strokeCount = 0
     let firstTry = 0
     const hintedOnce = new Set<number>()
+    statsRef.current = { totalMistakes: 0, backwards: 0, hintedStrokes: 0, stroke: 0 }
 
     function bump(live: Live) {
       liveRef.current?.(live)
+    }
+    function syncStats() {
+      statsRef.current = { totalMistakes, backwards, hintedStrokes, stroke: strokeCount }
     }
 
     if (mode === 'review' && snapshot) {
@@ -157,12 +165,14 @@ export const Writer = forwardRef<WriterHandle, Props>(function Writer(
             hintedOnce.add(d.strokeNum)
             hintedStrokes += 1
           }
+          syncStats()
           bump({ mistakes: totalMistakes, backwards, stroke: d.strokeNum + 1, hinted: hintedStrokes })
         },
         onCorrectStroke: (d) => {
           strokeCount += 1
           if (d.mistakesOnStroke === 0) firstTry += 1
           if (d.isBackwards) backwards += 1
+          syncStats()
           bump({ mistakes: totalMistakes, backwards, stroke: d.strokeNum + 1, hinted: hintedStrokes })
         },
         onComplete: (summary) => {

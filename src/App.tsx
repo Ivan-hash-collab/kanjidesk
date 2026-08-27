@@ -422,6 +422,14 @@ export default function App() {
           ) : null}
         </Sheet>
       ) : null}
+      <button
+        type="button"
+        className="help-fab"
+        aria-label="Справка по терминам"
+        onClick={() => dispatch({ type: 'sheet', tab: 'help', settingsKind })}
+      >
+        ?
+      </button>
     </div>
   )
 }

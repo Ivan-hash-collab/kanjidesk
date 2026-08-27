@@ -53,7 +53,7 @@ export function SessionSummary({
         <span className={`grade-letter g-${s.grade}`}>{s.grade}</span>
         <div className="summary-facts">
           <p>
-            <b>{s.quality}</b> качество · {s.accuracy}% · {s.n} ответов
+            <b>{s.grade}</b> · {s.accuracy}% верных · {s.n} ответов
           </p>
           <p className="muted">
             {s.ok} верно · {s.bad} ошибок · {fmtMs(s.avgMs)} на знак
@@ -77,9 +77,9 @@ export function SessionSummary({
 
       {s.worst.length ? (
         <p className="chip-line">
-          слабые:{' '}
+          {s.n > 0 ? `слабые (среднее качество в этом круге по каждому знаку): ` : 'знаки с низким качеством: '}
           {s.worst.map((w) => (
-            <span key={w.char}>
+            <span key={w.char} title={`Среднее качество ${w.char} = ${w.quality} из 100`}>
               {glyph(w.char)}
               <em>{w.quality}</em>
             </span>

@@ -37,11 +37,20 @@ export function LineChart({ points, labels, max = 100, title }: Props) {
         <polygon points={area} className="chart-fill" />
         <polyline points={line} className="chart-line" />
         {xy.map((p, i) => (
-          <circle key={i} cx={p.x} cy={p.y} r="3.2" className="chart-dot">
-            <title>{`${labels?.[i] ?? i + 1}: ${p.v}`}</title>
-          </circle>
+          <g key={i}>
+            <circle cx={p.x} cy={p.y} r="5" className="chart-hit" />
+            <circle cx={p.x} cy={p.y} r="3.2" className="chart-dot">
+              <title>{`${labels?.[i] ?? `круг ${i + 1}`}: качество ${p.v}`}</title>
+            </circle>
+            {labels?.[i] ? (
+              <text x={p.x} y={p.y - 8} textAnchor="middle" className="chart-point-label">
+                {labels[i]}
+              </text>
+            ) : null}
+          </g>
         ))}
       </svg>
+      <p className="muted">Точки — качество по кругам (старые слева). Наведи на точку — номер и значение.</p>
     </figure>
   )
 }

@@ -47,6 +47,8 @@ export type QuizSettings = {
   showOutline: boolean
   penWidth: number
   passQuality: number
+  speech: boolean
+  showKanji: 'glyph' | 'blank' | 'reading'
 }
 
 export type SheetTab = 'settings' | 'help' | 'leave'
@@ -76,6 +78,7 @@ export type Settings = {
   showOutline: boolean
   penWidth: number
   passQuality: number
+  showKanji: 'glyph' | 'blank' | 'reading'
 }
 
 export type WriteReport = {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { meaningLine } from '../lib/kanji'
-import { kanjiWithRadical, radicalsOf, similarByRadical } from '../lib/radicals'
+import { radicalsOf, similarByMeaning, similarVisual } from '../lib/similar'
 import type { KanjiDict } from '../types'
 
 type Props = {
@@ -19,59 +19,48 @@ function Chip({ ch, dict, onKanji }: { ch: string; dict: KanjiDict; onKanji: (ch
 }
 
 export function SimilarKanji({ char, dict, onKanji }: Props) {
-  const [similar, setSimilar] = useState<string[]>([])
-  const [byRad, setByRad] = useState<{ rad: string; list: string[] }[]>([])
+  const [visual, setVisual] = useState<string[]>([])
   const [rads, setRads] = useState<string[]>([])
+  const meaning = similarByMeaning(char, dict, 18)
 
   useEffect(() => {
     let live = true
-    setSimilar([])
-    setByRad([])
+    setVisual([])
     setRads([])
-    void (async () => {
-      const [sim, rds] = await Promise.all([similarByRadical(char), radicalsOf(char)])
+    void Promise.all([similarVisual(char, 30), radicalsOf(char)]).then(([v, r]) => {
       if (!live) return
-      setSimilar(sim)
-      setRads(rds)
-      const groups = await Promise.all(
-        rds.slice(0, 4).map(async (rad) => ({ rad, list: (await kanjiWithRadical(rad, 8)).filter((x) => x !== char) })),
-      )
-      if (live) setByRad(groups.filter((g) => g.list.length))
-    })()
+      setVisual(v)
+      setRads(r)
+    })
     return () => {
       live = false
     }
   }, [char])
 
-  if (!similar.length && !byRad.length) return null
+  if (!meaning.length && !visual.length) return null
   return (
     <section className="similar-kanji">
-      {similar.length ? (
+      {meaning.length ? (
         <>
-          <p className="kicker">Похожие по значению/составу кандзи</p>
+          <p className="kicker">Похожие по смыслу</p>
           <div className="kanji-chips">
-            {similar.slice(0, 18).map((ch) => (
-              <Chip key={ch} ch={ch} dict={dict} onKanji={onKanji} />
+            {meaning.map((ch) => (
+              <Chip key={`m-${ch}`} ch={ch} dict={dict} onKanji={onKanji} />
             ))}
           </div>
         </>
       ) : null}
-      {byRad.length ? (
+      {visual.length ? (
         <>
-          <p className="kicker">Радикалы и где они встречаются</p>
-          {byRad.map((g) => (
-            <div key={g.rad} className="rad-group">
-              <b className="jp rad-glyph">{g.rad}</b>
-              <div className="kanji-chips">
-                {g.list.map((ch) => (
-                  <Chip key={ch} ch={ch} dict={dict} onKanji={onKanji} />
-                ))}
-              </div>
-            </div>
-          ))}
+          <p className="kicker">Похожие визуально</p>
+          <div className="kanji-chips">
+            {visual.map((ch) => (
+              <Chip key={`v-${ch}`} ch={ch} dict={dict} onKanji={onKanji} />
+            ))}
+          </div>
         </>
       ) : null}
-      {rads.length ? <p className="muted">Радикалы: {rads.join('、')}</p> : null}
+      {rads.length ? <p className="muted">Составные радикалы: {rads.join('、')}</p> : null}
     </section>
   )
 }

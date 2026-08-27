@@ -9,6 +9,7 @@ import { FreqTag, WordRank } from '../components/FreqTag'
 import { KanjiRun } from '../components/KanjiRun'
 import { PitchAccent } from '../components/PitchAccent'
 import { ReadPills } from '../components/ReadPills'
+import { RadicalCard } from '../components/RadicalCard'
 import { SimilarKanji } from '../components/SimilarKanji'
 import { Tip } from '../components/Tip'
 import { SentList } from '../components/SentList'
@@ -17,6 +18,7 @@ import { freqLabel, freqOfKanji, freqOfWord, preloadFreq } from '../lib/freq'
 import { gradeLabel, infoOf, jlptLabel, meaningLine, uniqueKanji } from '../lib/kanji'
 import { allLocalWords, findWord, sentencesFor, wordsForKanji, type LexWord, type Sentence } from '../lib/lexicon'
 import { filterWords, parseDictQuery, searchKanji, wordJlpt, type DictKind, type DictSort, type JlptFilter } from '../lib/dictSearch'
+import { isRadical as isRadicalChar } from '../lib/similar'
 import { toRomaji } from '../lib/kana'
 import { addScanTerms } from '../lib/scan'
 import { speakJa } from '../lib/speech'
@@ -73,6 +75,7 @@ export const DictionaryView = forwardRef<DictApi, Props>(function DictionaryView
   const skipPush = useRef(false)
   const req = useRef(0)
   const [missing, setMissing] = useState('')
+  const [isRadical, setIsRadical] = useState(false)
   const [imp, setImp] = useState(false)
   const [kind, setKind] = useState<DictKind>('kanji')
   const [jlpt, setJlpt] = useState<JlptFilter>('all')
@@ -92,6 +95,19 @@ export const DictionaryView = forwardRef<DictApi, Props>(function DictionaryView
   )
   const related = useMemo(() => filterWords(words, '', dict, jlpt, sort, 200), [words, dict, jlpt, sort])
   const info = infoOf(dict, kanji)
+  useEffect(() => {
+    if (info) {
+      setIsRadical(false)
+      return
+    }
+    let live = true
+    void isRadicalChar(kanji).then((ok) => {
+      if (live) setIsRadical(ok)
+    })
+    return () => {
+      live = false
+    }
+  }, [kanji, info])
   const readings = useMemo(() => {
     const m: Record<string, string> = {}
     for (const w of words) {
@@ -521,7 +537,11 @@ export const DictionaryView = forwardRef<DictApi, Props>(function DictionaryView
             </dl>
             <p className="kicker">Состав знака</p>
             <CompTree tree={tree?.tree ?? null} onKanji={(ch) => void openKanji(ch)} />
-            <SimilarKanji char={kanji} dict={dict} onKanji={(ch) => void openKanji(ch)} />
+            {isRadical ? (
+              <RadicalCard rad={kanji} dict={dict} onKanji={(ch) => void openKanji(ch)} />
+            ) : (
+              <SimilarKanji char={kanji} dict={dict} onKanji={(ch) => void openKanji(ch)} />
+            )}
             <Fold title="Мнемоника и заметка" meta="свои поля, не агент">
               <KanjiPad char={kanji} />
             </Fold>

@@ -348,7 +348,7 @@ export const StudyView = forwardRef<StudyApi, Props>(function StudyView(
     markWritten(ch)
     onStats()
     record(ch, rep.quality >= (qs.passQuality || 55), { write: rep, kind })
-    if (settings.speech) speakJa(ch, true)
+    if (qs.speech) speakJa(ch, true)
     setWriteDone(true)
     if (qs.autoNext) scheduleNext(550)
   }
@@ -497,7 +497,7 @@ export const StudyView = forwardRef<StudyApi, Props>(function StudyView(
     setPicked(opt)
     const correct = opt === q.answer
     record(q.char, correct, { kind: q.title, picked: opt })
-    if (settings.speech) speakJa(q.char, true)
+    if (qs.speech) speakJa(q.char, true)
     if (qs.autoNext) scheduleNext(correct ? 500 : 900)
   }
 
@@ -777,7 +777,7 @@ export const StudyView = forwardRef<StudyApi, Props>(function StudyView(
             <p className="meta">{info?.strokes ?? '—'} черт · чтение фильтрует слова справа, слово открывается тут же</p>
             <div className="flash-tools">
               <button type="button" className="btn" onClick={() => goTo(i - 1)}>Назад</button>
-              <button type="button" className="btn" onClick={() => speakJa(char, settings.speech)}>Слушать</button>
+              <button type="button" className="btn" onClick={() => speakJa(char, qs.speech)}>Слушать</button>
               {i >= total - 1 ? (
                 <button type="button" className="btn primary" onClick={() => setMode('hub')}>К режимам</button>
               ) : (
@@ -843,7 +843,9 @@ export const StudyView = forwardRef<StudyApi, Props>(function StudyView(
       {mode === 'mcq' && q ? (
         <div className="study-main prompt-stage quiz-wide">
           <p className="kicker">{q.title}</p>
-          <p className={q.promptIsKanji ? 'prompt-glyph jp' : 'prompt-text'}>{q.prompt}</p>
+          <p className={q.promptIsKanji ? 'prompt-glyph jp' : 'prompt-text'}>
+            {qs.showKanji === 'blank' && q.promptIsKanji ? '＿' : qs.showKanji === 'reading' && q.promptIsKanji ? '？' : q.prompt}
+          </p>
           {qs.readingHint && q.kind === 'k2r' && !picked ? (
             <p className="hint-mora">подсказка: {readingHintText(info, q.kind)}…</p>
           ) : null}

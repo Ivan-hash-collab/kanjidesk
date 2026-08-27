@@ -24,6 +24,8 @@ export const defaultQuiz = (): QuizSettings => ({
   showOutline: false,
   penWidth: 12,
   passQuality: 55,
+  speech: true,
+  showKanji: 'glyph',
 })
 
 function allQuiz(base?: Partial<QuizSettings>): Record<QuizId, QuizSettings> {
@@ -36,13 +38,16 @@ function allQuiz(base?: Partial<QuizSettings>): Record<QuizId, QuizSettings> {
   }
 }
 
+const { speech: _speech, ...flatQuizDefaults } = defaultQuiz()
+
 export const defaultSettings: Settings = {
   dark: false,
   speech: true,
   furi: 'hover',
   showGloss: true,
   quiz: allQuiz(),
-  ...defaultQuiz(),
+  ...flatQuizDefaults,
+  showKanji: 'glyph',
 }
 
 export function isQuizId(m: string): m is QuizId {
@@ -115,6 +120,8 @@ export function normalizeSettings(value: unknown): Settings {
     penWidth: Math.min(24, Math.max(4, raw.penWidth ?? 12)),
     passQuality: nearestGradeValue(raw.passQuality ?? 55, 'passQuality'),
     strictness: nearestGradeValue(strictness, 'strictness'),
+    speech: raw.speech !== false,
+    showKanji: raw.showKanji === 'blank' || raw.showKanji === 'reading' ? raw.showKanji : 'glyph',
   }
   const quiz = allQuiz(flat)
   if (raw.quiz) {
@@ -123,6 +130,8 @@ export function normalizeSettings(value: unknown): Settings {
       quiz[id].penWidth = Math.min(24, Math.max(4, quiz[id].penWidth ?? 12))
       quiz[id].strictness = nearestGradeValue(quiz[id].strictness, 'strictness')
       quiz[id].passQuality = nearestGradeValue(quiz[id].passQuality ?? 55, 'passQuality')
+      quiz[id].speech = quiz[id].speech !== false
+      quiz[id].showKanji = quiz[id].showKanji === 'blank' || quiz[id].showKanji === 'reading' ? quiz[id].showKanji : 'glyph'
     }
   }
   return {

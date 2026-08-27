@@ -187,6 +187,24 @@ export function QuizSetup({ settings, onSettings, writing = false, kind = 'all',
             </span>
             <input type="checkbox" checked={q.hypermode} onChange={(e) => onSettings(applyHypermode(settings, e.target.checked, mode))} />
           </label>
+          <label className="pref">
+            <span>
+              <b>Озвучка</b>
+              <small>Произносить кандзи в этом режиме</small>
+            </span>
+            <input type="checkbox" checked={q.speech} onChange={(e) => patch({ speech: e.target.checked })} />
+          </label>
+          <label className="pref">
+            <span>
+              <b>Показ кандзи</b>
+              <small>Что показывать в вопросе</small>
+            </span>
+            <select className="field" value={q.showKanji} onChange={(e) => patch({ showKanji: e.target.value as 'glyph' | 'blank' | 'reading' })}>
+              <option value="glyph">знак</option>
+              <option value="blank">прочерк / знак вопроса</option>
+              <option value="reading">чтение</option>
+            </select>
+          </label>
         </section>
       ) : null}
 
