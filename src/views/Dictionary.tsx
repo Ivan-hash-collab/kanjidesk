@@ -9,6 +9,7 @@ import { FreqTag, WordRank } from '../components/FreqTag'
 import { KanjiRun } from '../components/KanjiRun'
 import { PitchAccent } from '../components/PitchAccent'
 import { ReadPills } from '../components/ReadPills'
+import { SimilarKanji } from '../components/SimilarKanji'
 import { Tip } from '../components/Tip'
 import { SentList } from '../components/SentList'
 import { compositionOf, type CompNode } from '../lib/compose'
@@ -520,13 +521,12 @@ export const DictionaryView = forwardRef<DictApi, Props>(function DictionaryView
             </dl>
             <p className="kicker">Состав знака</p>
             <CompTree tree={tree?.tree ?? null} onKanji={(ch) => void openKanji(ch)} />
+            <SimilarKanji char={kanji} dict={dict} onKanji={(ch) => void openKanji(ch)} />
             <Fold title="Мнемоника и заметка" meta="свои поля, не агент">
               <KanjiPad char={kanji} />
             </Fold>
             {!tree?.tree && tree?.rads?.length ? (
-              <p className="muted">
-                Нет дерева IDS — только плоский KRADFILE, без вложенности: {tree.rads.join(' ')}
-              </p>
+              <p className="muted">Состав без дерева IDS — плоский список радикалов: {tree.rads.join(' ')}</p>
             ) : null}
             <p className="kicker">Слова с этим знаком{words.length ? ` · ${related.length} из ${words.length}` : ''}</p>
             <DictFilters jlpt={jlpt} onJlpt={setJlpt} sort={sort} onSort={setSort} kind="words" />

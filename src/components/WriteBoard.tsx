@@ -1,6 +1,7 @@
-import { memo, useCallback, useState } from 'react'
+import { memo, useCallback, useRef, useState } from 'react'
 import { GradeStamp } from './GradeStamp'
 import { MemoWriter } from './MemoWriter'
+import type { WriterHandle } from './Writer'
 import type { Settings, WriteReport } from '../types'
 
 type Live = { mistakes: number; backwards: number; stroke: number; hinted: number }
@@ -70,6 +71,7 @@ export const WriteBoard = memo(function WriteBoard({
   onCancelSkip,
 }: WriteBoardProps) {
   const [live, setLive] = useState<Live>({ mistakes: 0, backwards: 0, stroke: 0, hinted: 0 })
+  const writerRef = useRef<WriterHandle>(null)
 
   const bump = useCallback((next: Live) => setLive(next), [])
   const finish = useCallback(
@@ -97,6 +99,7 @@ export const WriteBoard = memo(function WriteBoard({
         ) : null}
       </div>
       <MemoWriter
+        ref={writerRef}
         key={`${index}-${locked ? 'lock' : retry}`}
         char={char}
         mode={locked ? 'review' : ((drawOutline || qs.showOutline) ? 'practice' : 'write')}
@@ -122,6 +125,7 @@ export const WriteBoard = memo(function WriteBoard({
           </>
         ) : (
           <>
+            <button type="button" className="btn" onClick={() => writerRef.current?.hint()}>Подсказать черту</button>
             <button type="button" className="btn" onClick={onRetry}>Ещё раз</button>
             <button type="button" className="btn skip-btn" onClick={onSkip} title="Пропустить этот кандзи и взять следующий">Пропустить кандзи</button>
             {writeDone && !qs.autoNext ? (

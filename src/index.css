@@ -1572,6 +1572,9 @@ button.pill:hover { border-color: var(--seal); color: var(--seal); }
 .comp-kids { display: grid; gap: 6px; margin-top: 4px; }
 .comp-idc { color: var(--seal); font-size: 18px; }
 .comp-rads { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
+.similar-kanji { display: grid; gap: 8px; }
+.rad-group { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.rad-group .rad-glyph { font-size: 26px; line-height: 1; color: var(--seal); }
 .comp-raw { font-size: 11px; word-break: break-all; }
 
 .preview-back {

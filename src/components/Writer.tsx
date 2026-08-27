@@ -1,10 +1,14 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type ReactNode } from 'react'
 import HanziWriter from 'hanzi-writer'
 import { strokeParams, writeQuality } from '../lib/quality'
 import { loadStrokes } from '../lib/strokes'
 import type { Settings, WriteReport } from '../types'
 
 type Mode = 'write' | 'practice' | 'animate' | 'review'
+
+export type WriterHandle = {
+  hint: () => void
+}
 
 type Live = {
   mistakes: number
@@ -42,15 +46,29 @@ function pen(settings: Settings, size: number) {
   }
 }
 
-export function Writer({ char, mode, settings, variant = 'board', onComplete, onLive, onSkip, snapshot, stamp }: Props) {
+export const Writer = forwardRef<WriterHandle, Props>(function Writer(
+  { char, mode, settings, variant = 'board', onComplete, onLive, onSkip, snapshot, stamp },
+  ref,
+) {
   const rice = useRef<HTMLDivElement>(null)
   const host = useRef<HTMLDivElement>(null)
+  const writerRef = useRef<HanziWriter | null>(null)
   const completeRef = useRef(onComplete)
   const liveRef = useRef(onLive)
   completeRef.current = onComplete
   liveRef.current = onLive
   const [error, setError] = useState(false)
   const [ready, setReady] = useState(false)
+
+  useImperativeHandle(ref, () => ({
+    hint() {
+      try {
+        writerRef.current?.skipQuizStroke()
+      } catch {
+        /* ignore */
+      }
+    },
+  }))
 
   useEffect(() => {
     const box = rice.current
@@ -114,6 +132,7 @@ export function Writer({ char, mode, settings, variant = 'board', onComplete, on
         if (!cancelled) setError(true)
       },
     })
+    writerRef.current = writer
 
     if (mode === 'animate') {
       void writer.animateCharacter()
@@ -202,6 +221,7 @@ export function Writer({ char, mode, settings, variant = 'board', onComplete, on
       } catch {
         /* ignore */
       }
+      if (writerRef.current === writer) writerRef.current = null
       el.innerHTML = ''
     }
   }, [
@@ -236,4 +256,4 @@ export function Writer({ char, mode, settings, variant = 'board', onComplete, on
       ) : null}
     </div>
   )
-}
+})

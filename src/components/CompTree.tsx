@@ -29,8 +29,8 @@ function Node({
 }) {
   const kids = node.kids ?? []
   const isIdc = Boolean(node.idc)
-  const [open, setOpen] = useState(true)
-  const shown = openAll == null ? open : openAll
+  const [open, setOpen] = useState(openAll ?? true)
+  const shown = open
   const label = isIdc
     ? IDC[node.ch] || 'схема'
     : role === 'root'
@@ -89,25 +89,27 @@ type Props = {
 }
 
 export function CompTree({ tree, onKanji }: Props) {
-  const [all, setAll] = useState<boolean | null>(null)
+  // Changing the mode remounts the whole tree so per-node toggles reset cleanly.
+  const [mode, setMode] = useState<'auto' | 'open' | 'closed'>('auto')
   if (!tree) return <p className="muted">Нет открытого разбора для этого знака.</p>
+  const openAll = mode === 'auto' ? null : mode === 'open'
   return (
     <div className="comp-wrap">
       <div className="row-actions">
-        <button type="button" className="btn ghost" onClick={() => setAll(true)}>
+        <button type="button" className="btn ghost" onClick={() => setMode('open')}>
           Раскрыть дерево
         </button>
-        <button type="button" className="btn ghost" onClick={() => setAll(false)}>
+        <button type="button" className="btn ghost" onClick={() => setMode('closed')}>
           Свернуть дерево
         </button>
-        {all != null ? (
-          <button type="button" className="btn ghost" onClick={() => setAll(null)}>
+        {mode !== 'auto' ? (
+          <button type="button" className="btn ghost" onClick={() => setMode('auto')}>
             По узлам
           </button>
         ) : null}
       </div>
       <p className="muted">Сложную часть можно свернуть. Клик по знаку — в словарь.</p>
-      <Node node={tree} onKanji={onKanji} role="root" openAll={all} />
+      <Node key={`${mode}-${tree.ch}`} node={tree} onKanji={onKanji} role="root" openAll={openAll} />
     </div>
   )
 }

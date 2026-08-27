@@ -240,7 +240,11 @@ export default function App() {
         {view !== 'home' ? (
           <div className="view-bar">
             <BackBtn onClick={goHome} label="На главную" />
-            {(view === 'study' ? studyInner : view === 'dict' ? dictDepth > 1 : trail.length > 2) ? (
+            {(view === 'study'
+              ? studyInner
+              : view === 'dict'
+                ? dictDepth > 1 || trail.length > 1
+                : trail.length > 2) ? (
               <BackBtn onClick={goBack} label="Назад" />
             ) : (
               <span className="view-bar-slot" />
