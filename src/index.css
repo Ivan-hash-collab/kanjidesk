@@ -137,8 +137,10 @@ input[type='range'] { accent-color: var(--seal); }
 
 .main {
   overflow: auto;
+  overflow-x: hidden;
   padding: 10px 12px 12px;
   min-height: 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
 }
@@ -159,21 +161,26 @@ input[type='range'] { accent-color: var(--seal); }
 .view-bar-slot { visibility: hidden; pointer-events: none; }
 .main.is-study {
   overflow: auto;
+  overflow-x: hidden;
   padding: 10px 12px 10px;
 }
 .main.is-study:has(.panel.study),
 .main.is-study:has(.setup-panel) {
   overflow: hidden;
+  overflow-x: hidden;
 }
 .main.is-study:has(.summary-page) {
   overflow: auto;
+  overflow-x: hidden;
 }
 .view-pane {
   display: none;
   flex: 1;
   min-height: 0;
+  min-width: 0;
   flex-direction: column;
   overflow: auto;
+  overflow-x: hidden;
 }
 .view-pane.is-on { display: flex; }
 .main.is-study:has(.panel.study) .view-pane,
@@ -1329,8 +1336,8 @@ ruby.is-session { box-shadow: inset 0 -3px 0 var(--seal); }
 .gloss-list { margin: 0; padding-left: 1.2em; display: grid; gap: 2px; color: var(--ok); }
 .sent-block { display: grid; gap: 6px; }
 .sent-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.sent-ja { font-size: 18px; line-height: 1.7; }
-.sent-en { font-size: 13px; color: var(--muted); }
+.sent-ja { font-size: 18px; line-height: 1.7; overflow-wrap: anywhere; word-break: break-word; }
+.sent-en { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; word-break: break-word; }
 
 .scan-wrap { display: block; position: relative; }
 .scan-run { font-family: var(--serif); letter-spacing: 0; }
@@ -1339,6 +1346,8 @@ ruby.is-session { box-shadow: inset 0 -3px 0 var(--seal); }
   font-family: inherit;
   letter-spacing: 0;
   cursor: default;
+  user-select: text;
+  -webkit-user-select: text;
 }
 .scan-ch.is-link,
 .scan-ch.is-on {

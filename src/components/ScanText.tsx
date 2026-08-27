@@ -69,7 +69,9 @@ export function ScanText({ text, extra = [], readings, furi = 'off', active, onW
       <span
         key={`${i}-${ch}`}
         className={`scan-ch ${linked[i] ? 'is-link' : ''} ${on ? 'is-on' : ''} ${CJK.test(ch) ? 'jp' : ''}`}
-        onMouseEnter={() => {
+        onMouseEnter={(e) => {
+          // Не сбрасывать выделение, когда тянем текст мышью — иначе копирование рвётся.
+          if (e.buttons > 0) return
           setPos(i)
           setAlt(0)
         }}
