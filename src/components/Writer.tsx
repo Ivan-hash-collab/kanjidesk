@@ -98,12 +98,12 @@ export function Writer({ char, mode, settings, variant = 'board', onComplete, on
       radicalColor: '#8b2e1f',
       showCharacter: mode === 'animate' || mode === 'review',
       showOutline: mode === 'practice' || mode === 'animate' || mode === 'review' || settings.showOutline,
-      strokeAnimationSpeed: settings.hypermode ? 1.6 : 1.1,
-      delayBetweenStrokes: settings.hypermode ? 60 : 140,
+      strokeAnimationSpeed: settings.hypermode ? 1.7 : 1.3,
+      delayBetweenStrokes: settings.hypermode ? 40 : 100,
       drawingWidth: ink.drawingWidth,
       strokeWidth: ink.strokeWidth,
       outlineWidth: ink.outlineWidth,
-      drawingFadeDuration: 220,
+      drawingFadeDuration: 160,
       charDataLoader: (c, onLoad, onErr) => {
         loadStrokes(c).then(onLoad).catch(onErr)
       },

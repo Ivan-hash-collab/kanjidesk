@@ -51,18 +51,18 @@ describe('localStorage migrations', () => {
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEYS.settings)!) as Record<string, unknown>
     const settings = loadSettings()
 
-    expect(stored.strictness).toBe(50)
+    expect(stored.strictness).toBe(45)
     expect(stored.experimental).toEqual({ keep: true })
     expect(settings).toMatchObject({
       dark: true,
       speech: false,
       furi: 'off',
-      strictness: 50,
+      strictness: 45,
       autoNext: false,
       hintAfter: 4,
     })
-    expect(settings.quiz.practice.strictness).toBe(50)
-    expect(settings.quiz.draw).toMatchObject({ strictness: 88, penWidth: 24 })
+    expect(settings.quiz.practice.strictness).toBe(45)
+    expect(settings.quiz.draw).toMatchObject({ strictness: 92, penWidth: 24 })
     expect(localStorage.getItem(STORAGE_KEYS.version)).toBe(String(CURRENT_STORAGE_VERSION))
   })
 

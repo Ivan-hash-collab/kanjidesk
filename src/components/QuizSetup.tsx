@@ -1,6 +1,6 @@
 import { FuriSeg } from './FuriSeg'
 import { SourcesPanel } from './SourcesPanel'
-import { applyHypermode, passLabel, settingsSummary, strictnessLabel, strokeParams } from '../lib/quality'
+import { GRADE_LEVELS, applyHypermode, gradeLevelOf, nearestGradeValue, settingsSummary } from '../lib/quality'
 import { isQuizId, patchQuiz, quizOf } from '../lib/storage'
 import type { KanjiDict, QuizId, QuizSettings, Settings } from '../types'
 
@@ -17,7 +17,6 @@ type Props = {
 export function QuizSetup({ settings, onSettings, writing = false, kind = 'all', dict }: Props) {
   const mode: QuizId = isQuizId(kind) ? kind : 'draw'
   const q = quizOf(settings, mode)
-  const sp = strokeParams(q)
   const showWriting = kind === 'draw' || kind === 'all'
   const showSession = kind === 'practice' || kind === 'draw' || kind === 'mcq' || kind === 'all'
   const showMcq = kind === 'mcq' || kind === 'all'
@@ -40,54 +39,51 @@ export function QuizSetup({ settings, onSettings, writing = false, kind = 'all',
       {showWriting ? (
         <section className="setup-sec">
           <p className="setup-label">Распознавание штрихов</p>
-          <div className="seg wrap">
-            {(
-              [
-                [12, 'Мягко'],
-                [35, 'Спокойно'],
-                [45, 'Норма'],
-                [72, 'Строго'],
-                [92, 'Экзамен'],
-              ] as const
-            ).map(([n, lab]) => (
+          <p className="muted">Насколько педантично сравнивать черту с образцом, пока ты пишешь.</p>
+          <div className="seg wrap grade-5">
+            {GRADE_LEVELS.map((lv) => (
               <button
-                key={n}
+                key={`rec-${lv.n}`}
                 type="button"
-                className={q.strictness === n ? 'is-on' : ''}
-                onClick={() => patch({ strictness: n })}
+                className={nearestGradeValue(q.strictness, 'strictness') === lv.strictness ? 'is-on' : ''}
+                onClick={() => patch({ strictness: lv.strictness })}
               >
-                {lab}
+                {lv.n} · {lv.label}
               </button>
             ))}
           </div>
-          <label className="pref range-pref">
-            <span>
-              <b>Строгость пера {q.strictness}</b>
-              <small>
-                {strictnessLabel(q.strictness)} · допуск {sp.leniency.toFixed(2)}
-              </small>
-            </span>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              value={q.strictness}
-              onChange={(e) => patch({ strictness: Number(e.target.value) })}
-            />
-          </label>
-          <label className="pref range-pref">
-            <span>
-              <b>Зачёт написания ≥ {q.passQuality}</b>
-              <small>{passLabel(q.passQuality)} · ниже порога знак считается ошибкой</small>
-            </span>
-            <input
-              type="range"
-              min={25}
-              max={95}
-              value={q.passQuality}
-              onChange={(e) => patch({ passQuality: Number(e.target.value) })}
-            />
-          </label>
+          <p className="cfg-summary">{gradeLevelOf(q.strictness, 'strictness').recognize}</p>
+          <p className="setup-label">Зачёт написания</p>
+          <p className="muted">Какой итоговый балл ещё считается правильным для круга.</p>
+          <div className="seg wrap grade-5">
+            {GRADE_LEVELS.map((lv) => (
+              <button
+                key={`pass-${lv.n}`}
+                type="button"
+                className={nearestGradeValue(q.passQuality, 'passQuality') === lv.passQuality ? 'is-on' : ''}
+                onClick={() => patch({ passQuality: lv.passQuality })}
+              >
+                {lv.n} · {lv.label}
+              </button>
+            ))}
+          </div>
+        <p className="cfg-summary">
+          {gradeLevelOf(q.passQuality, 'passQuality').pass} · порог {nearestGradeValue(q.passQuality, 'passQuality')}
+        </p>
+        <p className="setup-label">Толщина пера</p>
+        <label className="pref range-pref">
+          <span>
+            <b>уровень {q.penWidth}</b>
+            <small>Меняет толщину всех черт на доске</small>
+          </span>
+          <input
+            type="range"
+            min={4}
+            max={24}
+            value={q.penWidth}
+            onChange={(e) => patch({ penWidth: Number(e.target.value) })}
+          />
+        </label>
           <label className="pref range-pref">
             <span>
               <b>Подсказка черты</b>
@@ -134,19 +130,6 @@ export function QuizSetup({ settings, onSettings, writing = false, kind = 'all',
               type="checkbox"
               checked={q.showOutline}
               onChange={(e) => patch({ showOutline: e.target.checked })}
-            />
-          </label>
-          <label className="pref range-pref">
-            <span>
-              <b>Толщина пера</b>
-              <small>уровень {q.penWidth}</small>
-            </span>
-            <input
-              type="range"
-              min={4}
-              max={24}
-              value={q.penWidth}
-              onChange={(e) => patch({ penWidth: Number(e.target.value) })}
             />
           </label>
         </section>

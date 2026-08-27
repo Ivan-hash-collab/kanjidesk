@@ -1,13 +1,33 @@
 import type { ItemLog, QuizId, QuizSettings, Settings, WriteReport } from '../types'
 import { patchQuiz, quizOf } from './storage'
 
+export const GRADE_LEVELS = [
+  { n: 1, label: 'Мягко', strictness: 12, passQuality: 35, recognize: 'Прощает кривые черты', pass: 'Зачёт почти за любую попытку' },
+  { n: 2, label: 'Спокойно', strictness: 35, passQuality: 45, recognize: 'Слабый допуск, ещё удобно учиться', pass: 'Слабый порог, ошибки не страшны' },
+  { n: 3, label: 'Норма', strictness: 45, passQuality: 55, recognize: 'Обычная проверка формы черты', pass: 'Обычный зачёт, около D' },
+  { n: 4, label: 'Строго', strictness: 72, passQuality: 70, recognize: 'Нужны форма и направление', pass: 'Нужна аккуратность, около C' },
+  { n: 5, label: 'Экзамен', strictness: 92, passQuality: 88, recognize: 'Почти совпасть с образцом', pass: 'Почти без ошибок, A/B' },
+] as const
+
+export type GradeKind = 'strictness' | 'passQuality'
+
+export function nearestGradeValue(value: number, kind: GradeKind): number {
+  const levels = GRADE_LEVELS.map((l) => l[kind])
+  return levels.reduce((best, n) => (Math.abs(n - value) < Math.abs(best - value) ? n : best))
+}
+
+export function gradeLevelOf(value: number, kind: GradeKind) {
+  const snapped = nearestGradeValue(value, kind)
+  return GRADE_LEVELS.find((l) => l[kind] === snapped) ?? GRADE_LEVELS[2]
+}
+
 export function strokeParams(s: Settings | QuizSettings): {
   leniency: number
   distThreshold: number
   hintAfter: number | false
   skipAfter: number | false
 } {
-  const t = Math.min(100, Math.max(0, s.strictness)) / 100
+  const t = Math.min(100, Math.max(0, nearestGradeValue(s.strictness, 'strictness'))) / 100
   return {
     leniency: 1.8 - t * 1.4,
     distThreshold: Math.round(450 - t * 230),
@@ -17,11 +37,12 @@ export function strokeParams(s: Settings | QuizSettings): {
 }
 
 export function strictnessLabel(n: number): string {
-  if (n < 20) return 'мягко'
-  if (n < 45) return 'спокойно'
-  if (n < 65) return 'норма'
-  if (n < 85) return 'строго'
-  return 'экзамен'
+  return gradeLevelOf(n, 'strictness').label.toLowerCase()
+}
+
+export function passLabel(n: number): string {
+  const lv = gradeLevelOf(n, 'passQuality')
+  return `${lv.n} · ${lv.label.toLowerCase()}`
 }
 
 export function writeQuality(r: Omit<WriteReport, 'quality' | 'char'> & { char?: string }): number {
@@ -135,14 +156,6 @@ export function emptyWrite(char: string): WriteReport {
   }
 }
 
-export function passLabel(n: number): string {
-  if (n <= 40) return 'почти всё зачёт'
-  if (n <= 55) return 'обычный зачёт (D)'
-  if (n <= 70) return 'нужна аккуратность'
-  if (n <= 85) return 'строго'
-  return 'почти без ошибок'
-}
-
 export function settingsSummary(s: Settings, writing: boolean, mode?: string): string {
   const q = mode ? quizOf(s, mode) : s
   const bits: string[] = []
@@ -153,8 +166,8 @@ export function settingsSummary(s: Settings, writing: boolean, mode?: string): s
   if (q.hideAnswers) bits.push('скрыть ответы')
   if (q.disableTimeouts) bits.push('без таймера')
   if (writing) {
-    bits.push(strictnessLabel(q.strictness))
-    bits.push(`зачёт ≥${q.passQuality ?? 55}`)
+    bits.push(`распознавание ${strictnessLabel(q.strictness)}`)
+    bits.push(`зачёт ${passLabel(q.passQuality ?? 55)}`)
     bits.push(q.showOutline ? 'контур' : 'без контура')
     if (q.hintAfter > 0) bits.push(`подсказка с ${q.hintAfter}`)
   }
@@ -163,15 +176,14 @@ export function settingsSummary(s: Settings, writing: boolean, mode?: string): s
 
 export function applyHypermode(s: Settings, on: boolean, mode: QuizId = 'draw'): Settings {
   if (!on) return patchQuiz(s, mode, { hypermode: false })
-  const q = quizOf(s, mode)
   return patchQuiz(s, mode, {
     hypermode: true,
     autoNext: true,
     hintAfter: 0,
-    strictness: Math.max(q.strictness, 78),
+    strictness: 92,
     acceptBackwards: false,
     disableTimeouts: false,
     hideAnswers: true,
-    passQuality: Math.max(q.passQuality, 70),
+    passQuality: 70,
   })
 }

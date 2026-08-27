@@ -1,4 +1,5 @@
 import { QUIZ_IDS, type CustomList, type QuizId, type QuizSettings, type SessionReport, type Settings, type Stats } from '../types'
+import { nearestGradeValue } from './quality'
 import { STORAGE_KEYS } from './storageKeys'
 
 const SETTINGS_KEY = STORAGE_KEYS.settings
@@ -107,20 +108,21 @@ export function normalizeSettings(value: unknown): Settings {
     readingHint: Boolean(raw.readingHint),
     disableTimeouts: Boolean(raw.disableTimeouts),
     hypermode: Boolean(raw.hypermode),
-    strictness,
     hintAfter: raw.hintAfter ?? 2,
     skipAfterMisses: raw.skipAfterMisses ?? 0,
     acceptBackwards: raw.acceptBackwards !== false,
     showOutline: Boolean(raw.showOutline),
     penWidth: Math.min(24, Math.max(4, raw.penWidth ?? 12)),
-    passQuality: Math.min(95, Math.max(20, raw.passQuality ?? 55)),
+    passQuality: nearestGradeValue(raw.passQuality ?? 55, 'passQuality'),
+    strictness: nearestGradeValue(strictness, 'strictness'),
   }
   const quiz = allQuiz(flat)
   if (raw.quiz) {
     for (const id of QUIZ_IDS) {
       quiz[id] = { ...quiz[id], ...(raw.quiz[id] ?? {}) }
       quiz[id].penWidth = Math.min(24, Math.max(4, quiz[id].penWidth ?? 12))
-      quiz[id].passQuality = Math.min(95, Math.max(20, quiz[id].passQuality ?? 55))
+      quiz[id].strictness = nearestGradeValue(quiz[id].strictness, 'strictness')
+      quiz[id].passQuality = nearestGradeValue(quiz[id].passQuality ?? 55, 'passQuality')
     }
   }
   return {

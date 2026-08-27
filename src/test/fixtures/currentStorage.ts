@@ -10,7 +10,7 @@ export function currentStorageFixture(today: string) {
     readingHint: true,
     disableTimeouts: false,
     hypermode: true,
-    strictness: 61,
+    strictness: 72,
     hintAfter: 3,
     skipAfterMisses: 2,
     acceptBackwards: false,
@@ -40,7 +40,7 @@ export function currentStorageFixture(today: string) {
       mcq: {
         ...practiceQuiz,
         hideAnswers: false,
-        strictness: 50,
+        strictness: 45,
       },
     },
     ...practiceQuiz,

@@ -7,13 +7,13 @@ import { ReadPills } from '../components/ReadPills'
 import { Tip } from '../components/Tip'
 import { WordRail } from '../components/WordRail'
 import { Writer } from '../components/Writer'
+import { WriteBoard } from '../components/WriteBoard'
 import {
   gradeLabel,
   infoOf,
   jlptLabel,
   meaningLine,
   readingHintText,
-  uniqueKanji,
 } from '../lib/kanji'
 import { buildMcq, type McqKind, type Question } from '../lib/quiz'
 import { fmtMs, settingsSummary, summarize } from '../lib/quality'
@@ -74,92 +74,6 @@ function applyLimit(chars: string[], limit: number, doShuffle: boolean): string[
   return limit > 0 ? a.slice(0, limit) : a
 }
 
-function StrokeHud({
-  live,
-}: {
-  live: { mistakes: number; backwards: number; stroke: number; hinted: number }
-}) {
-  return (
-    <p className="live-hud">
-      <span>
-        черта <b>{live.stroke || '—'}</b>
-      </span>
-      <span>
-        ошибки <b>{live.mistakes}</b>
-      </span>
-      <span>
-        назад <b>{live.backwards}</b>
-      </span>
-      <span>
-        подсказки <b>{live.hinted}</b>
-      </span>
-    </p>
-  )
-}
-
-function WriteActions({
-  confirmSkip,
-  char,
-  writeDone,
-  locked,
-  autoNext,
-  onRetry,
-  onSkip,
-  onCancelSkip,
-  onNext,
-}: {
-  confirmSkip: boolean
-  char: string
-  writeDone: boolean
-  locked: boolean
-  autoNext: boolean
-  onRetry: () => void
-  onSkip: () => void
-  onCancelSkip: () => void
-  onNext: () => void
-}) {
-  if (locked) {
-    return (
-      <div className="row-actions">
-        <p className="muted">Этот знак уже оценён — переписать нельзя.</p>
-        <button type="button" className="btn primary" onClick={onNext}>
-          Дальше
-        </button>
-      </div>
-    )
-  }
-  if (confirmSkip) {
-    return (
-      <div className="confirm-strip">
-        <p>
-          Пропустить {char}? Засчитается как ошибка.
-        </p>
-        <button type="button" className="btn bad" onClick={onSkip}>
-          Да, пропустить
-        </button>
-        <button type="button" className="btn" onClick={onCancelSkip}>
-          Писать дальше
-        </button>
-      </div>
-    )
-  }
-  return (
-    <div className="row-actions">
-      <button type="button" className="btn" onClick={onRetry}>
-        Ещё раз
-      </button>
-        <button type="button" className="btn skip-btn" onClick={onSkip} title="Пропустить этот кандзи и взять следующий">
-          Пропустить кандзи
-        </button>
-      {writeDone && !autoNext ? (
-        <button type="button" className="btn primary" onClick={onNext}>
-          Дальше
-        </button>
-      ) : null}
-    </div>
-  )
-}
-
 export const StudyView = forwardRef<StudyApi, Props>(function StudyView(
   {
     dict,
@@ -201,7 +115,6 @@ export const StudyView = forwardRef<StudyApi, Props>(function StudyView(
   const [questions, setQuestions] = useState<Question[]>([])
   const [log, setLog] = useState<ItemLog[]>([])
   const [history, setHistory] = useState<SessionReport[]>(() => loadHistory())
-  const [live, setLive] = useState({ mistakes: 0, backwards: 0, stroke: 0, hinted: 0 })
   const [writeDone, setWriteDone] = useState(false)
   const [answers, setAnswers] = useState<(ItemLog | null)[]>([])
   const [sessionMs, setSessionMs] = useState(0)
@@ -245,7 +158,6 @@ export const StudyView = forwardRef<StudyApi, Props>(function StudyView(
     setLog([])
     repeated.current = new Set()
     finished.current = false
-    setLive({ mistakes: 0, backwards: 0, stroke: 0, hinted: 0 })
     setWriteDone(false)
     setConfirmSkip(false)
     setConfirmRestart(false)
@@ -381,19 +293,10 @@ export const StudyView = forwardRef<StudyApi, Props>(function StudyView(
       setRevealed(true)
       setPicked(a.picked ?? (a.correct ? 'ok' : 'bad'))
       setWriteDone(true)
-      if (a.write) {
-        setLive({
-          mistakes: a.write.totalMistakes,
-          backwards: a.write.backwards,
-          stroke: a.write.strokeCount,
-          hinted: a.write.hintedStrokes,
-        })
-      }
     } else {
       setRevealed(false)
       setPicked(null)
       setWriteDone(false)
-      setLive({ mistakes: 0, backwards: 0, stroke: 0, hinted: 0 })
       startedItem.current = Date.now()
     }
   }, [i, answers])
@@ -973,50 +876,31 @@ export const StudyView = forwardRef<StudyApi, Props>(function StudyView(
       ) : null}
 
       {mode === 'draw' ? (
-        <div className="write-run">
-          <div className="write-prompt">
-            <div className="flash-meta">
-              <span>кандзи {i + 1} / {total || 1}{title && uniqueKanji(title).length > 1 ? ` · ${title}` : ''}</span>
-              <span>{live.stroke ? `${live.stroke} черта` : `${info?.strokes ?? '—'} черт`}</span>
-            </div>
-            {qs.hideAnswers && !revealed ? (
-              <button type="button" className="btn" onClick={() => setRevealed(true)}>
-                Показать чтения
-              </button>
-            ) : (
-              <>
-                <ReadPills info={info} active={readQ} onReading={pickRead} max={8} />
-                <p className="flash-mean">{meaningLine(info, 3)}</p>
-              </>
-            )}
-          </div>
-          <Writer
-            key={`${i}-${locked ? 'lock' : retry}`}
-            char={char}
-            mode={locked ? 'review' : (drawOutline || qs.showOutline ? 'practice' : 'write')}
-            settings={qs}
-            variant="board"
-            snapshot={locked?.write?.svg}
-            stamp={
-              locked ? <GradeStamp quality={locked.write?.quality ?? locked.quality} write={locked.write} /> : null
-            }
-            onComplete={locked ? undefined : (rep) => finishWrite(char, rep, 'draw')}
-            onLive={locked ? undefined : setLive}
-            onSkip={locked ? undefined : () => skipWrite(char, 'draw', true)}
-          />
-          <StrokeHud live={live} />
-          <WriteActions
-            confirmSkip={confirmSkip}
-            char={char}
-            writeDone={writeDone}
-            locked={Boolean(locked) || writeDone}
-            autoNext={qs.autoNext}
-            onRetry={() => setRetry((x) => x + 1)}
-            onSkip={() => skipWrite(char, 'draw')}
-            onCancelSkip={() => setConfirmSkip(false)}
-            onNext={() => next()}
-          />
-        </div>
+        <WriteBoard
+          char={char}
+          index={i}
+          total={total}
+          infoStrokes={info?.strokes ?? null}
+          locked={Boolean(locked)}
+          retry={retry}
+          qs={qs}
+          drawOutline={drawOutline}
+          revealed={revealed}
+          confirmSkip={confirmSkip}
+          writeDone={writeDone}
+          lockedQuality={locked?.write?.quality ?? locked?.quality}
+          lockedWrite={locked?.write}
+          snapshot={locked?.write?.svg}
+          readPills={<ReadPills info={info} active={readQ} onReading={pickRead} max={8} />}
+          meaning={meaningLine(info, 3)}
+          showReadPills={!(qs.hideAnswers && !revealed)}
+          onReveal={() => setRevealed(true)}
+          onFinish={(rep) => finishWrite(char, rep, 'draw')}
+          onSkip={() => skipWrite(char, 'draw')}
+          onNext={() => next()}
+          onRetry={() => setRetry((x) => x + 1)}
+          onCancelSkip={() => setConfirmSkip(false)}
+        />
       ) : null}
 
       {readQ && mode !== 'browse' ? (
