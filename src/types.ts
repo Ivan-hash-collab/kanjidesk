@@ -24,6 +24,7 @@ export type StudyIntent = {
   nonce: number
   mode: StudyMode
   autoStart: boolean
+  fromResume?: boolean
 }
 
 export type FuriMode = 'off' | 'hover' | 'on'

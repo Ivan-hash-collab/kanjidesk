@@ -18,7 +18,16 @@ import {
 import { buildMcq, type McqKind, type Question } from '../lib/quiz'
 import { fmtMs, settingsSummary, summarize } from '../lib/quality'
 import { speakJa } from '../lib/speech'
-import { HISTORY_EVENT, loadHistory, markWritten, saveSessionReport, withQuiz } from '../lib/storage'
+import {
+  HISTORY_EVENT,
+  clearStudyState,
+  loadHistory,
+  loadStudyState,
+  markWritten,
+  saveSessionReport,
+  saveStudyState,
+  withQuiz,
+} from '../lib/storage'
 import type { BusyInfo, ItemLog, KanjiDict, SessionReport, Settings, SheetTab, StudyIntent, StudyMode, WriteReport } from '../types'
 import { SessionSummary } from './SessionSummary'
 
@@ -196,6 +205,7 @@ export const StudyView = forwardRef<StudyApi, Props>(function StudyView(
     setAnswers(answersRef.current)
     setHeld(false)
     setPhase('run')
+    saveStudyState({ chars: d, title, mode: useMode, index: 0, deck: d })
   }
 
   const q = questions[i]
@@ -265,7 +275,34 @@ export const StudyView = forwardRef<StudyApi, Props>(function StudyView(
     }
     const mapped = mapMode(intent.mode)
     if (intent.autoStart) {
-      begin(undefined, mapped)
+      const saved = loadStudyState()
+      if (saved && saved.mode === mapped && saved.chars.length && !intent.fromResume) {
+        // Restore the saved run at its saved index (non-mcq decks replay cleanly).
+        const d = saved.deck.length ? saved.deck : saved.chars
+        setDeck(d)
+        dRef.current = d
+        answersRef.current = Array.from({ length: d.length }, () => null)
+        setAnswers(answersRef.current)
+        resetRun()
+        setMode(mapped)
+        setPhase('run')
+        setI(Math.min(saved.index, Math.max(0, d.length - 1)))
+        setHeld(false)
+        startedSession.current = Date.now()
+        if (mapped === 'mcq') {
+          const kinds: McqKind[] = []
+          if (mcq.k2m) kinds.push('k2m')
+          if (mcq.m2k) kinds.push('m2k')
+          if (mcq.k2r) kinds.push('k2r')
+          if (mcq.r2k) kinds.push('r2k')
+          const built = buildMcq(dict, d, kinds.length ? kinds : ['k2m'], 0, shuffleOn)
+          setQuestions(built)
+          qRef.current = built
+        }
+        saveStudyState({ ...saved, index: Math.min(saved.index, Math.max(0, d.length - 1)) })
+      } else {
+        begin(undefined, mapped)
+      }
     } else {
       setMode(mapped)
       setHeld(false)
@@ -397,6 +434,7 @@ export const StudyView = forwardRef<StudyApi, Props>(function StudyView(
     }
     setHistory(saveSessionReport(rep))
     setPhase('done')
+    clearStudyState()
     onStats()
   }
 
@@ -407,6 +445,8 @@ export const StudyView = forwardRef<StudyApi, Props>(function StudyView(
     setI(n)
     setConfirmSkip(false)
     setReadQ('')
+    saveStudyState({ chars: dRef.current, title, mode, index: n, deck: dRef.current })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }
 
   function next() {

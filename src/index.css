@@ -1579,6 +1579,19 @@ button.pill:hover { border-color: var(--seal); color: var(--seal); }
 .similar-kanji { display: grid; gap: 8px; }
 .rad-group { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
 .rad-group .rad-glyph { font-size: 26px; line-height: 1; color: var(--seal); }
+.meanings-editor { display: grid; gap: 8px; }
+.meaning-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.meaning-list li {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid var(--line);
+  padding: 4px 8px;
+  background: var(--paper);
+}
+.meaning-list li.is-drag { opacity: 0.5; }
+.meaning-text { flex: 1; }
+.drag-handle { color: var(--muted); cursor: grab; }
 .term-list { display: grid; gap: 8px; margin: 0; }
 .term-list dt { font-weight: 650; color: var(--seal); }
 .term-list dd { color: var(--muted); }

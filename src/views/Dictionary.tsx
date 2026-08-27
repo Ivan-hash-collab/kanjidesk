@@ -8,6 +8,7 @@ import { KanjiPad } from '../components/KanjiPad'
 import { FreqTag, WordRank } from '../components/FreqTag'
 import { KanjiRun } from '../components/KanjiRun'
 import { PitchAccent } from '../components/PitchAccent'
+import { MeaningsEditor } from '../components/MeaningsEditor'
 import { ReadPills } from '../components/ReadPills'
 import { RadicalCard } from '../components/RadicalCard'
 import { SimilarKanji } from '../components/SimilarKanji'
@@ -19,6 +20,7 @@ import { gradeLabel, infoOf, jlptLabel, meaningLine, uniqueKanji } from '../lib/
 import { allLocalWords, findWord, sentencesFor, wordsForKanji, type LexWord, type Sentence } from '../lib/lexicon'
 import { filterWords, parseDictQuery, searchKanji, wordJlpt, type DictKind, type DictSort, type JlptFilter } from '../lib/dictSearch'
 import { isRadical as isRadicalChar } from '../lib/similar'
+import { effectiveMeanings } from '../lib/wordMeta'
 import { toRomaji } from '../lib/kana'
 import { addScanTerms } from '../lib/scan'
 import { speakJa } from '../lib/speech'
@@ -448,11 +450,7 @@ export const DictionaryView = forwardRef<DictApi, Props>(function DictionaryView
               </p>
             ) : null}
             {word.meanings.length ? (
-              <ol className="gloss-list">
-                {word.meanings.map((g) => (
-                  <li key={g}>{g}</li>
-                ))}
-              </ol>
+              <MeaningsEditor written={word.written} kana={word.kana} fallback={word.meanings} />
             ) : (
               <p className="muted">
                 {uniqueKanji(word.written)
@@ -560,7 +558,7 @@ export const DictionaryView = forwardRef<DictApi, Props>(function DictionaryView
                         <PitchAccent kana={w.kana} patterns={w.pitch} compact />
                       </span>
                       <span>
-                        {w.meanings[0] || w.kana}{' '}
+                        {effectiveMeanings(w.written, w.kana, w.meanings)[0] || w.kana}{' '}
                         <WordRank written={w.written} alts={w.alts} kana={w.kana} dict={dict} common={w.common} />
                       </span>
                     </button>

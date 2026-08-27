@@ -14,7 +14,7 @@ import { loadDict, uniqueKanji } from './lib/kanji'
 import { initialNav, navReducer } from './lib/appNav'
 import { fallbackChannel, loadAppChannel, windowTitleFor } from './lib/appMode'
 import { preloadStrokes } from './lib/strokes'
-import { defaultSettings, factoryReset, isQuizId, loadLastSession, loadSettings, loadStats, saveLastSession, saveSettings } from './lib/storage'
+import { defaultSettings, factoryReset, isQuizId, loadLastSession, loadSettings, loadStats, loadStudyState, saveLastSession, saveSettings } from './lib/storage'
 import { clearAllNotes } from './lib/notesRepo'
 import type { BusyInfo, KanjiDict, Settings, StudyIntent, StudyMode, ViewId } from './types'
 
@@ -36,7 +36,13 @@ export default function App() {
   const [settings, setSettings] = useState<Settings>(() => loadSettings())
   const [stats, setStats] = useState(() => loadStats())
   const [busy, setBusy] = useState<BusyInfo>(EMPTY_BUSY)
-  const [intent, setIntent] = useState<StudyIntent | null>(null)
+  const [intent, setIntent] = useState<StudyIntent | null>(() => {
+    const saved = loadStudyState()
+    if (!saved?.chars.length) return null
+    const mode = saved.mode as StudyMode
+    if (!['browse', 'draw', 'practice', 'mcq', 'selfcheck', 'judge', 'drill'].includes(mode)) return null
+    return { nonce: Date.now(), mode, autoStart: true, fromResume: true }
+  })
   const [studyInner, setStudyInner] = useState(false)
   const [studyMode, setStudyMode] = useState<StudyMode>('hub')
   const [dictDepth, setDictDepth] = useState(0)

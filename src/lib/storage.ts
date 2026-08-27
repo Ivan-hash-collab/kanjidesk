@@ -360,6 +360,36 @@ export function saveLastSession(chars: string[]): void {
   localStorage.setItem(LAST_KEY, JSON.stringify(chars))
 }
 
+export type StudyState = {
+  chars: string[]
+  title: string
+  mode: string
+  index: number
+  deck: string[]
+}
+
+const STUDY_KEY = STORAGE_KEYS.studyState
+
+export function loadStudyState(): StudyState | null {
+  try {
+    const raw = localStorage.getItem(STUDY_KEY)
+    if (!raw) return null
+    const s = JSON.parse(raw) as StudyState
+    if (!Array.isArray(s.chars) || !Array.isArray(s.deck)) return null
+    return s
+  } catch {
+    return null
+  }
+}
+
+export function saveStudyState(s: StudyState): void {
+  localStorage.setItem(STUDY_KEY, JSON.stringify(s))
+}
+
+export function clearStudyState(): void {
+  localStorage.removeItem(STUDY_KEY)
+}
+
 export function loadHistory(): SessionReport[] {
   try {
     const raw = localStorage.getItem(HIST_KEY)

@@ -9,6 +9,7 @@ import { WordRank } from './FreqTag'
 import { KanjiRun } from './KanjiRun'
 import { SentList } from './SentList'
 import { filterWords, type DictSort, type JlptFilter } from '../lib/dictSearch'
+import { effectiveMeanings } from '../lib/wordMeta'
 import { PitchAccent } from './PitchAccent'
 
 type Props = {
@@ -43,7 +44,7 @@ function WordList({
               <PitchAccent kana={w.kana} patterns={w.pitch} compact />
             </span>
             <span>
-              {w.meanings[0] || w.kana || meaningLine(dict[w.written[0]], 1)}{' '}
+              {effectiveMeanings(w.written, w.kana, w.meanings)[0] || w.kana || meaningLine(dict[w.written[0]], 1)}{' '}
               <WordRank written={w.written} alts={w.alts} kana={w.kana} dict={dict} common={w.common} />
             </span>
           </button>

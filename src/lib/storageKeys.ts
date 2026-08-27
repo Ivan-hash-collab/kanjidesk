@@ -8,4 +8,5 @@ export const STORAGE_KEYS = {
   legacyNotes: 'kanjidesk.notes',
   kanjiMeta: 'kanjidesk.kanjiMeta',
   memoIds: 'kanjidesk.memoIds',
+  studyState: 'kanjidesk.studyState',
 } as const
