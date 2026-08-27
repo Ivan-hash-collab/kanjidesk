@@ -17,7 +17,8 @@ function sessionPlugin(): Plugin {
     if (url === '/app-mode.json') {
       res.setHeader('Content-Type', 'application/json; charset=utf-8')
       res.setHeader('Cache-Control', 'no-store')
-      res.end(JSON.stringify({ debug: true, channel: 'vite', label: 'отладка' }))
+      const version = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf-8')).version
+      res.end(JSON.stringify({ debug: true, channel: 'vite', label: 'отладка', version }))
       return
     }
     if (url !== '/session.json') {
@@ -43,37 +44,41 @@ function sessionPlugin(): Plugin {
   }
 }
 
-export default defineConfig({
-  base: './',
-  plugins: [react(), sessionPlugin()],
-  assetsInclude: ['**/*.wasm'],
-  optimizeDeps: { exclude: ['sql.js'] },
-  server: {
-    host: '127.0.0.1',
-    port: 8765,
-    strictPort: true,
-    proxy: {
-      '/memo-api': {
-        target: 'http://127.0.0.1:5280',
-        changeOrigin: true,
-        timeout: 300_000,
-        proxyTimeout: 300_000,
-        rewrite: (p) => p.replace(/^\/memo-api/, '') || '/',
+export default defineConfig(() => {
+  const version = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf-8')).version
+  return {
+    base: './',
+    define: { __APP_VERSION__: JSON.stringify(version) },
+    plugins: [react(), sessionPlugin()],
+    assetsInclude: ['**/*.wasm'],
+    optimizeDeps: { exclude: ['sql.js'] },
+    server: {
+      host: '127.0.0.1',
+      port: 8765,
+      strictPort: true,
+      proxy: {
+        '/memo-api': {
+          target: 'http://127.0.0.1:5280',
+          changeOrigin: true,
+          timeout: 300_000,
+          proxyTimeout: 300_000,
+          rewrite: (p) => p.replace(/^\/memo-api/, '') || '/',
+        },
       },
     },
-  },
-  preview: {
-    host: '127.0.0.1',
-    port: 8765,
-    strictPort: true,
-    proxy: {
-      '/memo-api': {
-        target: 'http://127.0.0.1:5280',
-        changeOrigin: true,
-        timeout: 300_000,
-        proxyTimeout: 300_000,
-        rewrite: (p) => p.replace(/^\/memo-api/, '') || '/',
+    preview: {
+      host: '127.0.0.1',
+      port: 8765,
+      strictPort: true,
+      proxy: {
+        '/memo-api': {
+          target: 'http://127.0.0.1:5280',
+          changeOrigin: true,
+          timeout: 300_000,
+          proxyTimeout: 300_000,
+          rewrite: (p) => p.replace(/^\/memo-api/, '') || '/',
+        },
       },
     },
-  },
+  }
 })

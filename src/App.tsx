@@ -203,7 +203,9 @@ export default function App() {
           <span>墨</span>
           <div>
             <strong>KanjiDesk</strong>
-            <small>{channel.debug ? 'отладка · start.bat' : 'пропись на ПК'}</small>
+            <small>
+              {channel.debug ? 'отладка · start.bat' : 'пропись на ПК'} · v{channel.version}
+            </small>
           </div>
         </div>
         <nav>

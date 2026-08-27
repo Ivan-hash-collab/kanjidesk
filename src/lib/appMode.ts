@@ -2,11 +2,16 @@ export type AppChannel = {
   debug: boolean
   channel: 'exe' | 'local' | 'vite'
   label: string
+  version: string
 }
 
+declare const __APP_VERSION__: string | undefined
+
+const VERSION = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : '0.0.0'
+
 export function fallbackChannel(): AppChannel {
-  if (import.meta.env.DEV) return { debug: true, channel: 'vite', label: 'отладка' }
-  return { debug: false, channel: 'exe', label: 'релиз' }
+  if (import.meta.env.DEV) return { debug: true, channel: 'vite', label: 'отладка', version: VERSION }
+  return { debug: false, channel: 'exe', label: 'релиз', version: VERSION }
 }
 
 export function parseChannel(value: unknown): AppChannel | null {
@@ -18,6 +23,7 @@ export function parseChannel(value: unknown): AppChannel | null {
     channel,
     debug: rec.debug === true || channel !== 'exe',
     label: typeof rec.label === 'string' ? rec.label : channel === 'exe' ? 'релиз' : 'отладка',
+    version: typeof rec.version === 'string' ? rec.version : VERSION,
   }
 }
 
