@@ -20,7 +20,7 @@ import { freqLabel, freqOfKanji, freqOfWord, preloadFreq } from '../lib/freq'
 import { gradeLabel, infoOf, jlptLabel, meaningLine, uniqueKanji } from '../lib/kanji'
 import { allLocalWords, findWord, sentencesFor, wordsForKanji, type LexWord, type Sentence } from '../lib/lexicon'
 import { filterWords, parseDictQuery, searchKanji, wordJlpt, type DictKind, type DictSort, type JlptFilter } from '../lib/dictSearch'
-import { isRadical as isRadicalChar } from '../lib/similar'
+import { isRadical as isRadicalChar, radicalCount } from '../lib/similar'
 import { effectiveMeanings } from '../lib/wordMeta'
 import { toRomaji } from '../lib/kana'
 import { addScanTerms } from '../lib/scan'
@@ -79,6 +79,8 @@ export const DictionaryView = forwardRef<DictApi, Props>(function DictionaryView
   const req = useRef(0)
   const [missing, setMissing] = useState('')
   const [isRadical, setIsRadical] = useState(false)
+  const [viewMode, setViewMode] = useState<'auto' | 'kanji' | 'radical'>('auto')
+  const [radCount, setRadCount] = useState(0)
   const [showAllWords, setShowAllWords] = useState(false)
   const [showAllSents, setShowAllSents] = useState(false)
   const [imp, setImp] = useState(false)
@@ -98,13 +100,24 @@ export const DictionaryView = forwardRef<DictApi, Props>(function DictionaryView
     () => searchKanji(dict, q, jlpt, sort, 240, scoreOpts),
     [dict, q, jlpt, sort, scoreOpts],
   )
-  const related = useMemo(() => filterWords(words, '', dict, jlpt, sort, 200), [words, dict, jlpt, sort])
+  const related = useMemo(() => filterWords(words, '', dict, jlpt, sort, 400), [words, dict, jlpt, sort])
+  const cappedRelated = useMemo(
+    () => (showAllWords ? related : related.slice(0, 24)),
+    [related, showAllWords],
+  )
   const info = infoOf(dict, kanji)
+  // Combined view when a char is both a kanji and a radical.
+  const bothRadical = isRadical && Boolean(info)
+  const showRadical = isRadical && (viewMode === 'radical' || (viewMode === 'auto' && !info))
+  const radicalTabs = bothRadical
   useEffect(() => {
     let live = true
-    // A kanji can also be a radical (月, 丨, …): show the radical section too.
-    void isRadicalChar(kanji).then((ok) => {
-      if (live) setIsRadical(ok)
+    // A kanji can also be a radical (月, 丨, …): offer a tab between the two views.
+    setViewMode('auto')
+    void Promise.all([isRadicalChar(kanji), radicalCount(kanji)]).then(([ok, n]) => {
+      if (!live) return
+      setIsRadical(ok)
+      setRadCount(n)
     })
     return () => {
       live = false
@@ -494,7 +507,22 @@ export const DictionaryView = forwardRef<DictApi, Props>(function DictionaryView
           </article>
         ) : info ? (
           <article className="dict-card">
-            <div className="dict-hero">
+            {radicalTabs ? (
+              <div className="radical-tabs seg" role="tablist">
+                <button type="button" className={!showRadical ? 'is-on' : ''} onClick={() => setViewMode('kanji')}>
+                  Кандзи
+                </button>
+                <button type="button" className={showRadical ? 'is-on' : ''} onClick={() => setViewMode('radical')}>
+                  Радикал ({radCount})
+                </button>
+              </div>
+            ) : null}
+            {showRadical ? (
+              <RadicalCard rad={kanji} dict={dict} onKanji={(ch) => void openKanji(ch)} />
+            ) : null}
+            {!showRadical ? (
+              <>
+              <div className="dict-hero">
               <span className="dict-glyph jp">{kanji}</span>
               <div>
                 <p className="flash-mean">
@@ -535,13 +563,10 @@ export const DictionaryView = forwardRef<DictApi, Props>(function DictionaryView
             </dl>
             <SectionFold title="Состав знака" defaultOpen>
               <CompTree tree={tree?.tree ?? null} onKanji={(ch) => void openKanji(ch)} />
-              {!isRadical ? (
+              {!bothRadical ? (
                 <SimilarKanji char={kanji} dict={dict} onKanji={(ch) => void openKanji(ch)} />
               ) : null}
             </SectionFold>
-            {isRadical ? (
-              <RadicalCard rad={kanji} dict={dict} onKanji={(ch) => void openKanji(ch)} />
-            ) : null}
             <Fold title="Мнемоника и заметка" meta="свои поля, не агент">
               <KanjiPad char={kanji} />
             </Fold>
@@ -550,15 +575,15 @@ export const DictionaryView = forwardRef<DictApi, Props>(function DictionaryView
             ) : null}
             <SectionFold
               title="Слова с этим знаком"
-              meta={words.length ? `${showAllWords ? related.length : Math.min(related.length, 24)} из ${words.length}` : 'нет'}
+              meta={related.length ? `${cappedRelated.length} из ${related.length}` : 'нет'}
               defaultOpen
-              moreLabel={related.length > 24 ? 'все вхождения' : undefined}
+              moreLabel={related.length > 24 ? (showAllWords ? 'свернуть' : 'все вхождения') : undefined}
               onShowAll={() => setShowAllWords((v) => !v)}
             >
               <DictFilters jlpt={jlpt} onJlpt={setJlpt} sort={sort} onSort={setSort} kind="words" />
-              {related.length ? (
+              {cappedRelated.length ? (
                 <ul className="word-rows">
-                  {(showAllWords ? related : related.slice(0, 24)).map((w) => (
+                  {cappedRelated.map((w) => (
                     <li key={w.written + w.kana}>
                       <button type="button" className="word-row" onClick={() => void openWord(w)}>
                         <span className="word-row-main">
@@ -581,23 +606,31 @@ export const DictionaryView = forwardRef<DictApi, Props>(function DictionaryView
                 </p>
               )}
             </SectionFold>
-            <SectionFold
-              title="Примеры предложений"
-              meta={`${sents.length}`}
-              defaultOpen
-              moreLabel={sents.length > 6 ? 'все вхождения' : undefined}
-              onShowAll={() => setShowAllSents((v) => !v)}
-            >
-              <SentList
-                sents={showAllSents ? sents : sents.slice(0, 6)}
-                extra={words.map((w) => w.written)}
-                readings={readings}
-                furi={furi}
-                showGloss={showGloss}
-                onWord={(w) => void openWritten(w)}
-                onKanji={(ch) => void openKanji(ch)}
-              />
-            </SectionFold>
+            {sents.length ? (
+              <SectionFold
+                title="Примеры предложений"
+                meta={`${showAllSents ? sents.length : Math.min(sents.length, 6)}`}
+                defaultOpen
+                moreLabel={sents.length > 6 ? (showAllSents ? 'свернуть' : 'все вхождения') : undefined}
+                onShowAll={() => setShowAllSents((v) => !v)}
+              >
+                <SentList
+                  sents={showAllSents ? sents : sents.slice(0, 6)}
+                  extra={words.map((w) => w.written)}
+                  readings={readings}
+                  furi={furi}
+                  showGloss={showGloss}
+                  onWord={(w) => void openWritten(w)}
+                  onKanji={(ch) => void openKanji(ch)}
+                />
+              </SectionFold>
+            ) : null}
+              </>
+            ) : null}
+          </article>
+        ) : isRadical && kanji ? (
+          <article className="dict-card">
+            <RadicalCard rad={kanji} dict={dict} onKanji={(ch) => void openKanji(ch)} />
           </article>
         ) : kind === 'words' && wordHits.length ? (
           <p className="muted">Выбери слово слева.</p>

@@ -21,12 +21,15 @@ function Chip({ ch, dict, onKanji }: { ch: string; dict: KanjiDict; onKanji: (ch
 export function SimilarKanji({ char, dict, onKanji }: Props) {
   const [visual, setVisual] = useState<string[]>([])
   const [rads, setRads] = useState<string[]>([])
+  const [more, setMore] = useState(false)
   const meaning = similarByMeaning(char, dict, 18)
+  const LIMIT = 12
 
   useEffect(() => {
     let live = true
     setVisual([])
     setRads([])
+    setMore(false)
     void Promise.all([similarVisual(char, 30), radicalsOf(char)]).then(([v, r]) => {
       if (!live) return
       setVisual(v)
@@ -38,13 +41,14 @@ export function SimilarKanji({ char, dict, onKanji }: Props) {
   }, [char])
 
   if (!meaning.length && !visual.length) return null
+  const showMore = more || (meaning.length + visual.length) <= LIMIT
   return (
     <section className="similar-kanji">
       {meaning.length ? (
         <>
           <p className="kicker">Похожие по смыслу</p>
           <div className="kanji-chips">
-            {meaning.map((ch) => (
+            {(showMore ? meaning : meaning.slice(0, LIMIT)).map((ch) => (
               <Chip key={`m-${ch}`} ch={ch} dict={dict} onKanji={onKanji} />
             ))}
           </div>
@@ -54,11 +58,16 @@ export function SimilarKanji({ char, dict, onKanji }: Props) {
         <>
           <p className="kicker">Похожие визуально</p>
           <div className="kanji-chips">
-            {visual.map((ch) => (
+            {(showMore ? visual : visual.slice(0, LIMIT)).map((ch) => (
               <Chip key={`v-${ch}`} ch={ch} dict={dict} onKanji={onKanji} />
             ))}
           </div>
         </>
+      ) : null}
+      {!showMore ? (
+        <button type="button" className="btn ghost" onClick={() => setMore(true)}>
+          показать все
+        </button>
       ) : null}
       {rads.length ? <p className="muted">Составные радикалы: {rads.join('、')}</p> : null}
     </section>
