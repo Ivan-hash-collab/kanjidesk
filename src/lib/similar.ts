@@ -49,16 +49,48 @@ export async function similarVisual(ch: string, limit = 30): Promise<string[]> {
   return out.slice(0, limit)
 }
 
+/**
+ * Canonical radical keys used by that character. A kanji that *is* a radical
+ * (e.g. 丨) will list a half/full-width lookalike (｜), so we gather all of its
+ * own radical keys plus the char itself.
+ */
+async function radicalKeys(ch: string): Promise<string[]> {
+  const own = rads?.[ch] ?? []
+  return [...new Set([ch, ...own])]
+}
+
 /** Kanji that contain a given radical, e.g. 月 → 明, 期, 朝, … */
 export async function kanjiWithRadical(rad: string, limit = 60): Promise<string[]> {
   await ensureRadicals()
-  return (byRadical?.get(rad) ?? []).slice(0, limit)
+  const keys = await radicalKeys(rad)
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const key of keys) {
+    for (const other of byRadical?.get(key) ?? []) {
+      if (seen.has(other)) continue
+      seen.add(other)
+      out.push(other)
+    }
+  }
+  return out.slice(0, limit)
 }
 
-/** True if `ch` is itself a radical (appears as a radical of another kanji). */
+/** How many kanji contain `rad` (across all its radical spellings). */
+export async function radicalCount(rad: string): Promise<number> {
+  await ensureRadicals()
+  const keys = await radicalKeys(rad)
+  const seen = new Set<string>()
+  for (const key of keys) {
+    for (const other of byRadical?.get(key) ?? []) seen.add(other)
+  }
+  return seen.size
+}
+
+/** True if `ch` is used as a radical by other kanji. */
 export async function isRadical(ch: string): Promise<boolean> {
   await ensureRadicals()
-  return Boolean(byRadical?.has(ch))
+  const keys = await radicalKeys(ch)
+  return keys.some((key) => (byRadical?.get(key) ?? []).length > 0)
 }
 
 /** Kanji whose English meanings overlap with `ch` (semantic neighbours). */

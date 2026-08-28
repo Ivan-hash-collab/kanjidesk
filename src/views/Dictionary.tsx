@@ -101,18 +101,15 @@ export const DictionaryView = forwardRef<DictApi, Props>(function DictionaryView
   const related = useMemo(() => filterWords(words, '', dict, jlpt, sort, 200), [words, dict, jlpt, sort])
   const info = infoOf(dict, kanji)
   useEffect(() => {
-    if (info) {
-      setIsRadical(false)
-      return
-    }
     let live = true
+    // A kanji can also be a radical (月, 丨, …): show the radical section too.
     void isRadicalChar(kanji).then((ok) => {
       if (live) setIsRadical(ok)
     })
     return () => {
       live = false
     }
-  }, [kanji, info])
+  }, [kanji])
   const readings = useMemo(() => {
     const m: Record<string, string> = {}
     for (const w of words) {
@@ -538,12 +535,13 @@ export const DictionaryView = forwardRef<DictApi, Props>(function DictionaryView
             </dl>
             <SectionFold title="Состав знака" defaultOpen>
               <CompTree tree={tree?.tree ?? null} onKanji={(ch) => void openKanji(ch)} />
-              {isRadical ? (
-                <RadicalCard rad={kanji} dict={dict} onKanji={(ch) => void openKanji(ch)} />
-              ) : (
+              {!isRadical ? (
                 <SimilarKanji char={kanji} dict={dict} onKanji={(ch) => void openKanji(ch)} />
-              )}
+              ) : null}
             </SectionFold>
+            {isRadical ? (
+              <RadicalCard rad={kanji} dict={dict} onKanji={(ch) => void openKanji(ch)} />
+            ) : null}
             <Fold title="Мнемоника и заметка" meta="свои поля, не агент">
               <KanjiPad char={kanji} />
             </Fold>
