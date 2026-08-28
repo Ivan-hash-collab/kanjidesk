@@ -8,6 +8,7 @@ import { KanjiPad } from '../components/KanjiPad'
 import { FreqTag, WordRank } from '../components/FreqTag'
 import { KanjiRun } from '../components/KanjiRun'
 import { PitchAccent } from '../components/PitchAccent'
+import { KanjiMeaningsEditor } from '../components/KanjiMeaningsEditor'
 import { MeaningsEditor } from '../components/MeaningsEditor'
 import { ReadPills } from '../components/ReadPills'
 import { RadicalCard } from '../components/RadicalCard'
@@ -22,6 +23,7 @@ import { allLocalWords, findWord, sentencesFor, wordsForKanji, type LexWord, typ
 import { filterWords, parseDictQuery, searchKanji, wordJlpt, type DictKind, type DictSort, type JlptFilter } from '../lib/dictSearch'
 import { isRadical as isRadicalChar, radicalCount } from '../lib/similar'
 import { effectiveMeanings } from '../lib/wordMeta'
+import { effectiveKanjiMeanings } from '../lib/kanjiMeta'
 import { toRomaji } from '../lib/kana'
 import { addScanTerms } from '../lib/scan'
 import { speakJa } from '../lib/speech'
@@ -526,7 +528,7 @@ export const DictionaryView = forwardRef<DictApi, Props>(function DictionaryView
               <span className="dict-glyph jp">{kanji}</span>
               <div>
                 <p className="flash-mean">
-                  {info.meanings.join(' · ')} <FreqTag rank={kRank ?? info.freq} kind="kanji" jlpt={info.jlpt} />
+                  {effectiveKanjiMeanings(kanji, info.meanings).slice(0, 4).join(' · ')} <FreqTag rank={kRank ?? info.freq} kind="kanji" jlpt={info.jlpt} />
                 </p>
                 <ReadPills
                   info={info}
@@ -569,6 +571,9 @@ export const DictionaryView = forwardRef<DictApi, Props>(function DictionaryView
             </SectionFold>
             <Fold title="Мнемоника и заметка" meta="свои поля, не агент">
               <KanjiPad char={kanji} />
+            </Fold>
+            <Fold title="Значения кандзи" meta="свои, перетаскивай / добавляй / удаляй">
+              <KanjiMeaningsEditor char={kanji} fallback={info.meanings} />
             </Fold>
             {!tree?.tree && tree?.rads?.length ? (
               <p className="muted">Состав без дерева IDS — плоский список радикалов: {tree.rads.join(' ')}</p>

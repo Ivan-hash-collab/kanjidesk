@@ -50,19 +50,32 @@ export async function similarVisual(ch: string, limit = 30): Promise<string[]> {
 }
 
 /**
- * Canonical radical keys used by that character. A kanji that *is* a radical
- * (e.g. 丨) will list a half/full-width lookalike (｜), so we gather all of its
- * own radical keys plus the char itself.
+ * Keys by which `ch` is used as a radical BY OTHER kanji. A char is a radical
+ * only when its own radical list names *itself* (麻, 石, 月…) — in which case
+ * the key is `ch` — or when the list is a single half/full-width variant that
+ * stands in for it (丨 → ｜). For an ordinary kanji like 磨 (whose list is a set
+ * of unrelated parts) this is empty, so it is NOT a radical and its count is 0.
  */
-async function radicalKeys(ch: string): Promise<string[]> {
+async function ownRadicalKeys(ch: string): Promise<string[]> {
   const own = rads?.[ch] ?? []
-  return [...new Set([ch, ...own])]
+  const keys = new Set<string>()
+  if (own.includes(ch)) {
+    keys.add(ch)
+    return [...keys]
+  }
+  // Single-lookalike variant that represents the char, e.g. 丨's list is ['｜'].
+  if (own.length === 1 && byRadical?.has(own[0])) {
+    keys.add(own[0])
+    return [...keys]
+  }
+  if (byRadical?.has(ch)) keys.add(ch)
+  return [...keys]
 }
 
 /** Kanji that contain a given radical, e.g. 月 → 明, 期, 朝, … */
 export async function kanjiWithRadical(rad: string, limit = 60): Promise<string[]> {
   await ensureRadicals()
-  const keys = await radicalKeys(rad)
+  const keys = await ownRadicalKeys(rad)
   const seen = new Set<string>()
   const out: string[] = []
   for (const key of keys) {
@@ -75,10 +88,10 @@ export async function kanjiWithRadical(rad: string, limit = 60): Promise<string[
   return out.slice(0, limit)
 }
 
-/** How many kanji contain `rad` (across all its radical spellings). */
+/** How many kanji contain `rad` as their radical (0 for non-radicals). */
 export async function radicalCount(rad: string): Promise<number> {
   await ensureRadicals()
-  const keys = await radicalKeys(rad)
+  const keys = await ownRadicalKeys(rad)
   const seen = new Set<string>()
   for (const key of keys) {
     for (const other of byRadical?.get(key) ?? []) seen.add(other)
@@ -86,10 +99,10 @@ export async function radicalCount(rad: string): Promise<number> {
   return seen.size
 }
 
-/** True if `ch` is used as a radical by other kanji. */
+/** True only if `ch` is itself used as a radical by other kanji. */
 export async function isRadical(ch: string): Promise<boolean> {
   await ensureRadicals()
-  const keys = await radicalKeys(ch)
+  const keys = await ownRadicalKeys(ch)
   return keys.some((key) => (byRadical?.get(key) ?? []).length > 0)
 }
 
