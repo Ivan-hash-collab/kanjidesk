@@ -11,6 +11,7 @@ import { PitchAccent } from '../components/PitchAccent'
 import { MeaningsEditor } from '../components/MeaningsEditor'
 import { ReadPills } from '../components/ReadPills'
 import { RadicalCard } from '../components/RadicalCard'
+import { SectionFold } from '../components/SectionFold'
 import { SimilarKanji } from '../components/SimilarKanji'
 import { Tip } from '../components/Tip'
 import { SentList } from '../components/SentList'
@@ -78,6 +79,8 @@ export const DictionaryView = forwardRef<DictApi, Props>(function DictionaryView
   const req = useRef(0)
   const [missing, setMissing] = useState('')
   const [isRadical, setIsRadical] = useState(false)
+  const [showAllWords, setShowAllWords] = useState(false)
+  const [showAllSents, setShowAllSents] = useState(false)
   const [imp, setImp] = useState(false)
   const [kind, setKind] = useState<DictKind>('kanji')
   const [jlpt, setJlpt] = useState<JlptFilter>('all')
@@ -533,54 +536,70 @@ export const DictionaryView = forwardRef<DictApi, Props>(function DictionaryView
               <dt>Частота</dt>
               <dd>{kFreq || '—'}</dd>
             </dl>
-            <p className="kicker">Состав знака</p>
-            <CompTree tree={tree?.tree ?? null} onKanji={(ch) => void openKanji(ch)} />
-            {isRadical ? (
-              <RadicalCard rad={kanji} dict={dict} onKanji={(ch) => void openKanji(ch)} />
-            ) : (
-              <SimilarKanji char={kanji} dict={dict} onKanji={(ch) => void openKanji(ch)} />
-            )}
+            <SectionFold title="Состав знака" defaultOpen>
+              <CompTree tree={tree?.tree ?? null} onKanji={(ch) => void openKanji(ch)} />
+              {isRadical ? (
+                <RadicalCard rad={kanji} dict={dict} onKanji={(ch) => void openKanji(ch)} />
+              ) : (
+                <SimilarKanji char={kanji} dict={dict} onKanji={(ch) => void openKanji(ch)} />
+              )}
+            </SectionFold>
             <Fold title="Мнемоника и заметка" meta="свои поля, не агент">
               <KanjiPad char={kanji} />
             </Fold>
             {!tree?.tree && tree?.rads?.length ? (
               <p className="muted">Состав без дерева IDS — плоский список радикалов: {tree.rads.join(' ')}</p>
             ) : null}
-            <p className="kicker">Слова с этим знаком{words.length ? ` · ${related.length} из ${words.length}` : ''}</p>
-            <DictFilters jlpt={jlpt} onJlpt={setJlpt} sort={sort} onSort={setSort} kind="words" />
-            {related.length ? (
-              <ul className="word-rows">
-                {related.map((w) => (
-                  <li key={w.written + w.kana}>
-                    <button type="button" className="word-row" onClick={() => void openWord(w)}>
-                      <span className="word-row-main">
-                        <KanjiRun text={w.written} furi={furi} wordReading={w.kana} />
-                        <PitchAccent kana={w.kana} patterns={w.pitch} compact />
-                      </span>
-                      <span>
-                        {effectiveMeanings(w.written, w.kana, w.meanings)[0] || w.kana}{' '}
-                        <WordRank written={w.written} alts={w.alts} kana={w.kana} dict={dict} common={w.common} />
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="muted">
-                {words.length
-                  ? 'Нет слов с этим JLPT. Выбери «все» или другой уровень.'
-                  : 'Нет сети или слов для этого знака. Используется открытый JMdict (kanjiapi.dev), не база Kanji Study.'}
-              </p>
-            )}
-            <SentList
-              sents={sents}
-              extra={words.map((w) => w.written)}
-              readings={readings}
-              furi={furi}
-              showGloss={showGloss}
-              onWord={(w) => void openWritten(w)}
-              onKanji={(ch) => void openKanji(ch)}
-            />
+            <SectionFold
+              title="Слова с этим знаком"
+              meta={words.length ? `${showAllWords ? related.length : Math.min(related.length, 24)} из ${words.length}` : 'нет'}
+              defaultOpen
+              moreLabel={related.length > 24 ? 'все вхождения' : undefined}
+              onShowAll={() => setShowAllWords((v) => !v)}
+            >
+              <DictFilters jlpt={jlpt} onJlpt={setJlpt} sort={sort} onSort={setSort} kind="words" />
+              {related.length ? (
+                <ul className="word-rows">
+                  {(showAllWords ? related : related.slice(0, 24)).map((w) => (
+                    <li key={w.written + w.kana}>
+                      <button type="button" className="word-row" onClick={() => void openWord(w)}>
+                        <span className="word-row-main">
+                          <KanjiRun text={w.written} furi={furi} wordReading={w.kana} />
+                          <PitchAccent kana={w.kana} patterns={w.pitch} compact />
+                        </span>
+                        <span>
+                          {effectiveMeanings(w.written, w.kana, w.meanings)[0] || w.kana}{' '}
+                          <WordRank written={w.written} alts={w.alts} kana={w.kana} dict={dict} common={w.common} />
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="muted">
+                  {words.length
+                    ? 'Нет слов с этим JLPT. Выбери «все» или другой уровень.'
+                    : 'Нет сети или слов для этого знака. Используется открытый JMdict (kanjiapi.dev), не база Kanji Study.'}
+                </p>
+              )}
+            </SectionFold>
+            <SectionFold
+              title="Примеры предложений"
+              meta={`${sents.length}`}
+              defaultOpen
+              moreLabel={sents.length > 6 ? 'все вхождения' : undefined}
+              onShowAll={() => setShowAllSents((v) => !v)}
+            >
+              <SentList
+                sents={showAllSents ? sents : sents.slice(0, 6)}
+                extra={words.map((w) => w.written)}
+                readings={readings}
+                furi={furi}
+                showGloss={showGloss}
+                onWord={(w) => void openWritten(w)}
+                onKanji={(ch) => void openKanji(ch)}
+              />
+            </SectionFold>
           </article>
         ) : kind === 'words' && wordHits.length ? (
           <p className="muted">Выбери слово слева.</p>

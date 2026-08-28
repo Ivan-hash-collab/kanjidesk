@@ -1608,6 +1608,17 @@ button.pill:hover { border-color: var(--seal); color: var(--seal); }
 .term-list { display: grid; gap: 8px; margin: 0; }
 .term-list dt { font-weight: 650; color: var(--seal); }
 .term-list dd { color: var(--muted); }
+.section-fold {
+  display: grid;
+  gap: 6px;
+  border: 1px solid var(--line);
+  padding: 6px 8px;
+  background: var(--sheet);
+}
+.section-fold-head { display: flex; align-items: center; gap: 8px; }
+.section-fold-head .fold-head { flex: 1; }
+.section-more { min-height: 28px; padding: 2px 8px; font-size: 12px; }
+.section-fold-body { display: grid; gap: 8px; }
 .help-fab {
   position: fixed;
   right: 16px;
