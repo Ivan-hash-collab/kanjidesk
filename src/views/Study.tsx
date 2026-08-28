@@ -786,7 +786,7 @@ export const StudyView = forwardRef<StudyApi, Props>(function StudyView(
   }
 
   return (
-    <div className={`panel study page-study ${readQ && mode !== 'browse' ? 'is-dock-open' : ''}`}>
+    <div className="panel study page-study">
       <header className="study-run-head">
         {mode === 'browse' ? (
           <p className="run-pills muted">обзор · без оценки · {i + 1}/{total || 1}</p>
@@ -919,51 +919,52 @@ export const StudyView = forwardRef<StudyApi, Props>(function StudyView(
       ) : null}
 
       {mode === 'draw' ? (
-        <WriteBoard
-          char={char}
-          index={i}
-          total={total}
-          infoStrokes={info?.strokes ?? null}
-          locked={Boolean(locked)}
-          retry={retry}
-          qs={qs}
-          drawOutline={drawOutline}
-          revealed={revealed}
-          confirmSkip={confirmSkip}
-          writeDone={writeDone}
-          lockedQuality={locked?.write?.quality ?? locked?.quality}
-          lockedWrite={locked?.write}
-          snapshot={locked?.write?.svg}
-          readPills={<ReadPills info={info} active={readQ} onReading={pickRead} max={8} />}
-          meaning={meaningLine(info, 3)}
-          showReadPills={!(qs.hideAnswers && !revealed)}
-          onReveal={() => setRevealed(true)}
-          onFinish={(rep) => finishWrite(char, rep, 'draw')}
-          onSkip={() => skipWrite(char, 'draw')}
-          onNext={() => next()}
-          onRetry={() => setRetry((x) => x + 1)}
-          onCancelSkip={() => setConfirmSkip(false)}
-        />
-      ) : null}
-
-      {readQ && mode !== 'browse' ? (
-        <div className="lex-dock">
-          <header className="lex-dock-head">
-            <p className="kicker">Слова с чтением {readQ} · {char}</p>
-            <button type="button" className="btn ghost" onClick={() => setReadQ('')}>
-              Закрыть
-            </button>
-          </header>
-          <WordRail
+        <div className={`study-layout ${readQ ? 'is-dock' : ''}`}>
+          <WriteBoard
             char={char}
-            dict={dict}
-            furi={settings.furi}
-            onFuri={(furi) => onSettings?.({ ...settings, furi })}
-            showGloss={settings.showGloss}
-            reading={readQ}
-            mask={qs.hideAnswers ? char : undefined}
-            onKanji={onOpenKanji}
+            index={i}
+            total={total}
+            infoStrokes={info?.strokes ?? null}
+            locked={Boolean(locked)}
+            retry={retry}
+            qs={qs}
+            drawOutline={drawOutline}
+            revealed={revealed}
+            confirmSkip={confirmSkip}
+            writeDone={writeDone}
+            lockedQuality={locked?.write?.quality ?? locked?.quality}
+            lockedWrite={locked?.write}
+            snapshot={locked?.write?.svg}
+            readPills={<ReadPills info={info} active={readQ} onReading={pickRead} max={8} />}
+            meaning={meaningLine(info, 3)}
+            showReadPills={!(qs.hideAnswers && !revealed)}
+            onReveal={() => setRevealed(true)}
+            onFinish={(rep) => finishWrite(char, rep, 'draw')}
+            onSkip={() => skipWrite(char, 'draw')}
+            onNext={() => next()}
+            onRetry={() => setRetry((x) => x + 1)}
+            onCancelSkip={() => setConfirmSkip(false)}
           />
+          {readQ ? (
+            <div className="lex-dock">
+              <header className="lex-dock-head">
+                <p className="kicker">Слова с чтением {readQ} · {char}</p>
+                <button type="button" className="btn ghost" onClick={() => setReadQ('')}>
+                  Закрыть
+                </button>
+              </header>
+              <WordRail
+                char={char}
+                dict={dict}
+                furi={settings.furi}
+                onFuri={(furi) => onSettings?.({ ...settings, furi })}
+                showGloss={settings.showGloss}
+                reading={readQ}
+                mask={char}
+                onKanji={onOpenKanji}
+              />
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>

@@ -27,11 +27,13 @@ function WordList({
   words,
   furi,
   dict,
+  mask,
   onOpen,
 }: {
   words: LexWord[]
   furi: FuriMode
   dict: KanjiDict
+  mask?: string
   onOpen: (written: string) => void
 }) {
   if (!words.length) return null
@@ -41,7 +43,7 @@ function WordList({
         <li key={w.written + w.kana}>
           <button type="button" className="word-row" onClick={() => onOpen(w.written)}>
             <span className="word-row-main">
-              <KanjiRun text={w.written} furi={furi} wordReading={w.kana} />
+              <KanjiRun text={w.written} furi={furi} wordReading={w.kana} mask={mask} />
               <PitchAccent kana={w.kana} patterns={w.pitch} compact />
             </span>
             <span>
@@ -129,7 +131,7 @@ export function WordRail({ char, dict, furi, showGloss = true, reading, mask, on
             ← к списку
           </button>
           <p className="word-head">
-            <KanjiRun text={peek.written} furi={furi} wordReading={peek.kana} />
+            <KanjiRun text={peek.written} furi={furi} wordReading={peek.kana} mask={mask} />
           </p>
           <p className="muted">
             {peek.kana || '—'}
@@ -168,13 +170,13 @@ export function WordRail({ char, dict, furi, showGloss = true, reading, mask, on
                 {filteredExact.length ? (
                   <>
                     <p className="kicker">Словарная форма</p>
-                    <WordList words={filteredExact} furi={furi} dict={dict} onOpen={(w) => void openWord(w)} />
+                    <WordList words={filteredExact} furi={furi} dict={dict} mask={mask} onOpen={(w) => void openWord(w)} />
                   </>
                 ) : null}
                 {filteredStem.length ? (
                   <>
                     <p className="kicker">Другие формы и основа</p>
-                    <WordList words={filteredStem} furi={furi} dict={dict} onOpen={(w) => void openWord(w)} />
+                    <WordList words={filteredStem} furi={furi} dict={dict} mask={mask} onOpen={(w) => void openWord(w)} />
                   </>
                 ) : null}
                 {!filteredExact.length && !filteredStem.length ? (
@@ -185,7 +187,7 @@ export function WordRail({ char, dict, furi, showGloss = true, reading, mask, on
               <p className="muted">Нет вхождений этой основы в текущем списке.</p>
             )
           ) : filtered.length ? (
-            <WordList words={filtered} furi={furi} dict={dict} onOpen={(w) => void openWord(w)} />
+            <WordList words={filtered} furi={furi} dict={dict} mask={mask} onOpen={(w) => void openWord(w)} />
           ) : (
             <p className="muted">
               {words.length ? 'Нет слов с этим фильтром.' : 'Слова подгрузятся, если есть сеть или локальный корпус.'}

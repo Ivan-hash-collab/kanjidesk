@@ -1139,23 +1139,21 @@ ruby.is-session { box-shadow: inset 0 -3px 0 var(--seal); }
   flex-wrap: wrap;
 }
 .grade-row .btn { min-width: 120px; }
+.study-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  min-height: 0;
+  height: 100%;
+}
+.study-layout.is-dock { grid-template-columns: minmax(0, 1fr) min(320px, 40vw); }
 .lex-dock {
-  position: absolute;
-  right: 8px;
-  top: 0;
-  bottom: 8px;
-  width: min(320px, 42vw);
   overflow: auto;
   background: var(--sheet);
   border: 1px solid var(--ink);
   padding: 10px;
-  z-index: 6;
   border-radius: 4px;
-}
-.panel.study.is-dock-open { padding-right: min(336px, 44vw); }
-.panel.study.is-dock-open > .study-run-head,
-.panel.study.is-dock-open > .timer-bar {
-  margin-right: min(336px, 44vw);
+  min-height: 0;
 }
 .lex-dock-head {
   display: flex;
@@ -1178,7 +1176,9 @@ ruby.is-session { box-shadow: inset 0 -3px 0 var(--seal); }
   grid-template-rows: auto minmax(0, 1fr) auto auto;
   gap: 6px;
   min-height: 0;
+  min-width: 0;
   height: 100%;
+  padding-right: 0;
 }
 .write-prompt { display: grid; justify-items: center; gap: 6px; }
 .write-run .rice.board {

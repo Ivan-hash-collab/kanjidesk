@@ -10,15 +10,24 @@ type Props = {
   /** Per-character fallback, usually kun/on from KANJIDIC. */
   charReadings?: Record<string, string>
   onKanji?: (ch: string) => void
+  /** Kanji to render as a blank tile (studied char in practice mode). */
+  mask?: string
   className?: string
 }
 
-export function KanjiRun({ text, furi, wordReading, charReadings, onKanji, className }: Props) {
+export function KanjiRun({ text, furi, wordReading, charReadings, onKanji, mask, className }: Props) {
   const inner = [...text].map((ch, i) => {
     if (!KANJI.test(ch)) {
       return (
         <span key={i} className="jp-kana">
           {ch}
+        </span>
+      )
+    }
+    if (mask?.includes(ch)) {
+      return (
+        <span key={i} className="jp mask-tile">
+          ＿
         </span>
       )
     }
