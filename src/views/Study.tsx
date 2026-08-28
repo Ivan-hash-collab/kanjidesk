@@ -786,7 +786,7 @@ export const StudyView = forwardRef<StudyApi, Props>(function StudyView(
   }
 
   return (
-    <div className="panel study page-study">
+    <div className={`panel study page-study ${readQ && mode !== 'browse' ? 'is-dock-open' : ''}`}>
       <header className="study-run-head">
         {mode === 'browse' ? (
           <p className="run-pills muted">обзор · без оценки · {i + 1}/{total || 1}</p>
@@ -833,6 +833,7 @@ export const StudyView = forwardRef<StudyApi, Props>(function StudyView(
             onFuri={(furi) => onSettings?.({ ...settings, furi })}
             showGloss={settings.showGloss}
             reading={readQ}
+            mask={qs.hideAnswers ? char : undefined}
             onKanji={onOpenKanji}
           />
         </div>
@@ -960,6 +961,7 @@ export const StudyView = forwardRef<StudyApi, Props>(function StudyView(
             onFuri={(furi) => onSettings?.({ ...settings, furi })}
             showGloss={settings.showGloss}
             reading={readQ}
+            mask={qs.hideAnswers ? char : undefined}
             onKanji={onOpenKanji}
           />
         </div>

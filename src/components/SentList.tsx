@@ -10,6 +10,7 @@ type Props = {
   furi: FuriMode
   onFuri?: (f: FuriMode) => void
   showGloss: boolean
+  mask?: string
   onWord: (written: string) => void
   onKanji?: (ch: string) => void
 }
@@ -20,6 +21,7 @@ export function SentList({
   readings,
   furi,
   showGloss,
+  mask,
   onWord,
   onKanji,
 }: Props) {
@@ -44,6 +46,7 @@ export function SentList({
                 extra={extra}
                 readings={map}
                 furi={furi}
+                mask={mask}
                 onWord={onWord}
                 onKanji={onKanji}
               />

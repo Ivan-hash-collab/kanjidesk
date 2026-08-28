@@ -11,11 +11,12 @@ type Props = {
   readings?: Record<string, string>
   furi?: FuriMode
   active?: string
+  mask?: string
   onWord: (written: string) => void
   onKanji?: (ch: string) => void
 }
 
-export function ScanText({ text, extra = [], readings, furi = 'off', active, onWord, onKanji }: Props) {
+export function ScanText({ text, extra = [], readings, furi = 'off', active, mask, onWord, onKanji }: Props) {
   const [ready, setReady] = useState(false)
   const [pos, setPos] = useState(-1)
   const [alt, setAlt] = useState(0)
@@ -86,7 +87,7 @@ export function ScanText({ text, extra = [], readings, furi = 'off', active, onW
           choose(current ?? { surface: ch, lemma: ch, kind: CJK.test(ch) ? 'kanji' : 'word', score: 0 })
         }}
       >
-        {ch}
+        {mask?.includes(ch) && !on ? <span className="mask-tile">＿</span> : ch}
       </span>
     )
   }

@@ -19,6 +19,7 @@ type Props = {
   onFuri?: (f: FuriMode) => void
   showGloss?: boolean
   reading?: string
+  mask?: string
   onKanji?: (ch: string) => void
 }
 
@@ -54,7 +55,7 @@ function WordList({
   )
 }
 
-export function WordRail({ char, dict, furi, showGloss = true, reading, onKanji }: Props) {
+export function WordRail({ char, dict, furi, showGloss = true, reading, mask, onKanji }: Props) {
   const [words, setWords] = useState<LexWord[]>([])
   const [sents, setSents] = useState<Sentence[]>([])
   const [peek, setPeek] = useState<LexWord | null>(null)
@@ -197,6 +198,7 @@ export function WordRail({ char, dict, furi, showGloss = true, reading, onKanji 
             furi={furi}
             onFuri={undefined}
             showGloss={showGloss}
+            mask={mask}
             onWord={(w) => void openWord(w)}
             onKanji={onKanji}
           />
